@@ -31,7 +31,20 @@ var CATS = [["pantry", /cereal|loops|cheerios|oatmeal|granola|flakes|syrup|pasta
   ["frozen", /\b(frozen|fries|ice cream|nuggets?|pizza)\b/i], ["drinks", /\b(water|juice|soda|coffee|tea|punch|seltzer|drink)\b/i],
   ["snacks", /\b(chips?|crackers?|crix|cookies?|snacks?|popcorn|pretzels?|candy|gum|wafers?)\b/i], ["household", /\b(towels?|soap|detergent|tissues?|toilet|trash|foil|sponges?|cleaner)\b/i]];
 function guessCat(n) { for (var i = 0; i < CATS.length; i++) if (CATS[i][1].test(n)) return CATS[i][0]; return "pantry"; }
-function thumb(c) { return '<div class="thumb" style="background-image:url(img/c/' + esc(c || "pantry") + '.jpg)" aria-hidden="true"></div>'; }
+var imgCache = {v: null, m: {}};
+function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h.toString(36); }
+function imgFor(name) {
+  var d = byId(D.settings, "imgs"); if (!d || !name) return "";
+  if (imgCache.v !== d.value) { imgCache.v = d.value; imgCache.m = safeParse(d.value, {}); }
+  var p = imgCache.m[hashStr(String(name).toLowerCase().replace(/[^a-z0-9]/g, ""))];
+  return p ? "https://i5.peapod.com/" + p : "";
+}
+/* Real product photo when we have one; the category picture stays underneath if it fails to load. */
+function thumb(c, name) {
+  var u = imgFor(name);
+  return '<div class="thumb" style="background-image:url(img/c/' + esc(c || "pantry") + '.jpg)" aria-hidden="true">' +
+    (u ? '<img src="' + esc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:inherit;display:block" onerror="this.remove()">' : "") + "</div>";
+}
 function recImg(r) { return r.img ? "img/r/" + r.img + ".jpg" : "img/meals.jpg"; }
 
 /* ---------- sync with the sheet ---------- */
@@ -110,7 +123,7 @@ function showSugg(id, q) {
   var box = $(id === "ask" ? "sugg" : "sugg2"); if (!box) return;
   var m = q; if (id === "ask") { var p = parseAdd(q); m = p.items[0] || ""; }
   var r = suggest(m);
-  box.innerHTML = r.map(function (c) { return '<button data-act="pickcat" data-id="' + esc(c.id) + '" data-in="' + id + '">' + thumb(c.cat) + '<span class="grow"><b>' + esc(c.brand || c.name) + '</b><div class="hint">' + esc([c.size, c.timesBought ? "bought " + c.timesBought + "x" : ""].filter(Boolean).join(" · ")) + '</div></span><span class="hint">+ add</span></button>'; }).join("");
+  box.innerHTML = r.map(function (c) { return '<button data-act="pickcat" data-id="' + esc(c.id) + '" data-in="' + id + '">' + thumb(c.cat, c.brand || c.name) + '<span class="grow"><b>' + esc(c.brand || c.name) + '</b><div class="hint">' + esc([c.size, c.timesBought ? "bought " + c.timesBought + "x" : ""].filter(Boolean).join(" · ")) + '</div></span><span class="hint">+ add</span></button>'; }).join("");
 }
 
 /* ---------- list actions ---------- */
@@ -159,7 +172,7 @@ function prefsList() { var d = byId(D.settings, "prefs"); return d ? safeParse(d
 /* ---------- views ---------- */
 function itemRows(items) {
   if (!items.length) return '<p class="empty">Nothing on this list yet. Type what you need above.</p>';
-  return items.map(function (i) { return '<div class="item">' + thumb(i.cat) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, i.note, i.addedBy ? "added by " + i.addedBy : ""].filter(Boolean).join(" · ")) + '</div>' +
+  return items.map(function (i) { return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, i.note, i.addedBy ? "added by " + i.addedBy : ""].filter(Boolean).join(" · ")) + '</div>' +
     '<button class="pill" data-s="' + esc(i.status) + '" data-act="cycle" data-id="' + esc(i.id) + '" aria-label="Status ' + (lab[i.status] || "") + ', tap to change">' + (lab[i.status] || "On list") + '</button></div>' +
     '<div class="step"><button data-act="dec" data-id="' + esc(i.id) + '" aria-label="Less">&minus;</button><span>' + (i.qty || 1) + '</span><button data-act="inc" data-id="' + esc(i.id) + '" aria-label="More">+</button></div>' +
     '<button class="trash" data-act="del" data-id="' + esc(i.id) + '" aria-label="Remove ' + esc(i.name) + '">&#128465;</button></div>'; }).join("");
@@ -205,7 +218,7 @@ function pan() {
     var its = D.pantry.filter(function (p) { return p.zone === z; });
     h += '<div class="banner-img" style="background-image:url(' + banners[z] + ')" role="img" aria-label="' + z + '"><span>' + z + '</span></div><div class="card" style="margin-top:0">' +
       (its.length ? its.map(function (p) { var cls = p.status === "ok" ? "ok" : p.status === "unconfirmed" ? "info" : "warn", txt = {ok: "OK", low: "Low", out: "Out", unconfirmed: "Check"}[p.status] || "Check";
-        return '<div class="ing"><div class="grow"><b>' + esc(p.name) + '</b><div class="sub">' + esc([p.size, p.note].filter(Boolean).join(" · ")) + "</div></div>" +
+        return '<div class="ing">' + (imgFor(p.name) ? thumb("pantry", p.name) : "") + '<div class="grow"><b>' + esc(p.name) + '</b><div class="sub">' + esc([p.size, p.note].filter(Boolean).join(" · ")) + "</div></div>" +
           ((p.status === "low" || p.status === "out") ? '<button class="btn sm" data-act="pantrylist" data-id="' + esc(p.id) + '">+ List</button>' : "") +
           '<button class="chip ' + cls + '" data-act="pcycle" data-id="' + esc(p.id) + '" aria-label="' + esc(p.name) + " status " + txt + ', tap to change">' + txt + "</button></div>"; }).join("") : '<p class="empty">Nothing here yet.</p>') + "</div>";
   });
