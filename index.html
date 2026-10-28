@@ -203,13 +203,56 @@ svg.i{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.5;stro
 .inst img{width:56px;height:56px;border-radius:14px;flex:none}
 .inst b{font:600 17px var(--serif);display:block}.inst small{color:var(--muted);font-size:13px;line-height:1.3;display:block;margin-top:2px}
 .inst .row2{display:flex;gap:8px;margin-top:8px}
+
+/* ---- v8: clean top, Shop with Needs | Cart ---- */
+#app{padding-bottom:180px}
+#status.banner{background:none;border:0;margin:22px 0 0;padding:0;color:var(--muted);font-size:12px;text-align:center}
+.dayhero{position:relative;margin:0 calc(-1*var(--gl)) 0 calc(-1*var(--gr));aspect-ratio:1/1;background:#e9dfcc center/cover no-repeat}
+.dayline{font:600 13px system-ui;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:14px 4px 0}
+.qa{display:flex;gap:8px;align-items:center;margin:8px 0 0;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 16px;box-shadow:var(--shadow)}
+.qa input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;min-height:46px;padding:0}
+.qa .addb{flex:none}
+.qa .mic2{width:50px;height:50px;border-radius:50%;border:0;background:linear-gradient(160deg,color-mix(in srgb,var(--terra) 88%,#fff),var(--terra) 60%,color-mix(in srgb,var(--terra) 75%,#000));display:grid;place-items:center;cursor:pointer;flex:none}
+.qa .mic2 svg{width:26px;height:26px;stroke:#fff;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round;margin:0}
+.qahint{font-size:12.5px;color:var(--muted);margin:6px 6px 0}
+.counts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.cnt{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:16px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;box-shadow:var(--shadow);min-height:118px;display:flex;flex-direction:column}
+.cnt .n{font:600 44px/1 var(--serif);color:var(--green)}
+.cnt .l{font:600 17px var(--serif);margin-top:6px}
+.cnt .s{font-size:12.5px;color:var(--muted);margin-top:auto;padding-top:6px}
+.cnt.c2 .n{color:var(--terra)}
+.sc{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:12px 14px;font:inherit;color:var(--ink);text-align:left;cursor:pointer;min-height:64px}
+.sc .face{width:40px;height:40px}.sc b{font:600 16px var(--serif);display:block}.sc small{color:var(--muted);font-size:12.5px}
+.vmini{display:flex;align-items:center;gap:12px}
+.homelinks{text-align:center;margin-top:6px}.homelinks .linkbtn{display:block;margin:0 auto}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--chip);border-radius:999px;padding:4px;margin:6px 0 4px}
+.seg2 button{border:1px solid transparent;background:transparent;border-radius:999px;padding:10px 12px;min-height:46px;font:inherit;font-weight:600;color:var(--muted);cursor:pointer}
+.seg2 button[aria-pressed="true"]{background:var(--card);color:var(--green);border-color:var(--green)}
+.seg2 b{margin-left:6px;color:var(--terra)}
+.tocart{border:1px solid var(--green);background:transparent;color:var(--green);border-radius:999px;padding:8px 13px;font:600 14px system-ui;min-height:40px;cursor:pointer;white-space:nowrap}
+.tocart svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin:0 4px 0 0;display:inline}
+.pickp{display:inline-block;margin:4px 6px 0 0;font-size:12px;border:1px dashed var(--warn);color:var(--warn);border-radius:999px;padding:3px 10px;background:transparent;cursor:pointer;min-height:28px}
+.step.sm{margin-top:6px}.step.sm button{width:30px;height:30px;font-size:16px}
+.tag{display:inline-block;font-size:12px;border-radius:999px;padding:3px 10px;margin-top:4px;border:1px solid var(--line);background:var(--chip);color:var(--muted)}
+.tag.sync{color:var(--ok);border-color:var(--ok)}.tag.wait{color:var(--warn);border-color:var(--warn)}
+.sechead{display:flex;align-items:baseline;gap:8px;margin:14px 0 2px}.sechead h4{font:600 17px var(--serif);margin:0}.sechead .sub{margin-left:auto}
+.subtot{display:flex;justify-content:space-between;padding:12px 0 2px;font-weight:700;border-top:1px solid var(--line);margin-top:6px}
+.cartbtns{display:grid;gap:10px;margin-top:6px}
+.pushbig{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;border-radius:18px;min-height:60px;background:linear-gradient(135deg,#2f5a3d,#244a31);color:#fff;font:600 19px var(--serif);cursor:pointer;box-shadow:var(--shadow)}
+.pushbig svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0}
+.tbadge{position:absolute;top:2px;left:calc(50% + 6px);background:var(--terra);color:#fff;border-radius:999px;font-size:10px;padding:1px 6px;font-weight:700}
+#alertbox{position:fixed;left:0;right:0;top:calc(12px + env(safe-area-inset-top,0px));z-index:30;display:flex;justify-content:center;pointer-events:none}
+.alert{pointer-events:auto;width:min(92vw,490px);background:var(--ink);color:var(--bg);border:0;border-radius:18px;padding:14px 16px;display:flex;gap:12px;align-items:center;text-align:left;font:inherit;box-shadow:0 10px 30px rgba(0,0,0,.3);cursor:pointer}
+.alert svg{width:28px;height:28px;stroke:#8fd6a8;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;margin:0}
+.alert b{font:600 17px var(--serif);display:block}.alert small{opacity:.85;font-size:13px}
 </style>
 </head>
 <body>
 <div id="app">
-  <div class="banner" id="status">Loading your kitchen...</div>
   <div id="view"></div>
+  <div class="banner" id="status">Loading your kitchen...</div>
 </div>
+<div id="alertbox" role="status" aria-live="polite"></div>
 <button class="btn snap" id="snap" aria-label="Add photos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Snap photos</button>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <nav class="nav" aria-label="Main"><div id="tabs" role="tablist"></div></nav>
