@@ -256,7 +256,29 @@ function cook() {
   st.chat.forEach(function (c) { h += c.who === "me" ? '<div class="msg me">' + esc(c.t) + "</div>" : '<div class="aiRow">' + face() + '<div class="msg ai">' + c.t + "</div></div>"; });
   return h + '</div><div class="bar2"><input type="text" id="liain" placeholder="Ask Lia, or say: add butter" aria-label="Ask Lia" autocomplete="off" enterkeyhint="send"><button class="round" data-act="liasend" aria-label="Send">' + ic("send", "") + "</button></div>";
 }
-function liaSay(q) { st.chat.push({who: "me", t: q}); st.chat.push({who: "ai", t: liaAnswer(q)}); render(); setTimeout(function () { window.scrollTo(0, document.body.scrollHeight); }, 30); }
+var liaBusy = false;
+function liaPlain(h) { return String(h).replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&rsquo;/g, "'").replace(/\s+/g, " ").trim(); }
+function liaApply(o) {
+  var done = [], html = esc(o.reply || "");
+  (o.add || []).forEach(function (x) { var n = (x && x.name || "").trim(); if (n) { addByName(n, st.store, x.note || ""); done.push("Added " + n + " to " + st.store); } });
+  (o.cooked || []).forEach(function (id) { var r = byId(D.recipes, id); if (r) { var ml = meals(); ml[id] = today(); put("settings", "meallog", {value: JSON.stringify(ml)}); done.push("Logged " + r.name + " as made today"); } });
+  if (o.gear) { var g = byId(D.settings, "gear"), v = (g ? String(g.value || "") + "\n" : "") + String(o.gear).slice(0, 300); put("settings", "gear", {value: v.slice(-4000)}); done.push("Remembered that"); }
+  if (o.banger && o.banger.name) { put("recipes", null, {name: String(o.banger.name).slice(0, 80), img: "", serves: 8, ings: (o.banger.ings || []).slice(0, 40).map(function (i) { return {n: String(i.n || ""), q: String(i.q || "")}; }), note: String(o.banger.note || "").slice(0, 500), addedBy: me.name, kind: "banger"}); done.push("Saved " + o.banger.name + " to Bangers"); }
+  (o.show || []).slice(0, 3).forEach(function (id) { var r = byId(D.recipes, id); if (r) { var ig = recipeIngs(r), need = ig.filter(function (x) { return x.s === "need"; }).length; html += miniRec({r: r, has: ig.length > 0, need: need}); } });
+  if (done.length) html += '<div class="made" style="margin-top:8px">' + done.map(esc).join(" &middot; ") + "</div>";
+  return html;
+}
+function liaSay(q) {
+  if (liaBusy) return; st.chat.push({who: "me", t: q}); liaBusy = true; st.chat.push({who: "ai", t: '<span class="dots">...</span>', pending: true}); render(); scrollDown();
+  var hist = st.chat.filter(function (c) { return !c.pending; }).map(function (c) { return {role: c.who === "me" ? "user" : "assistant", content: c.who === "me" ? c.t : (c.raw || liaPlain(c.t))}; });
+  call({action: "lia", who: me.name, messages: hist}).then(function (r) {
+    if (!r.ok) throw new Error(r.error || "lia_failed");
+    return r.out;
+  }).then(function (o) { st.chat.pop(); st.chat.push({who: "ai", t: liaApply(o), raw: o.reply || ""}); }, function (e) {
+    st.chat.pop(); var msg = e.message === "no_key" ? "" : e.message === "daily_limit" ? "I have hit my chat limit for today, but here is what I can tell from your lists." : "I could not reach my brain just now, but here is what I can tell from your lists.";
+    st.chat.push({who: "ai", t: (msg ? esc(msg) + "<br>" : "") + liaAnswer(q), raw: ""}); }).then(function () { liaBusy = false; render(); scrollDown(); });
+}
+function scrollDown() { setTimeout(function () { window.scrollTo(0, document.body.scrollHeight); }, 30); }
 function home() {
   return '<section class="hero"><img class="logo" src="img/logo.png" alt="Pierre Family Kitchen"><h2>What does the family need today?</h2>' +
     '<div class="micwrap"><button class="mic" data-act="typing" aria-label="Tap to talk or type">' + ic("mic","") + '</button><div class="t">Tap to talk</div><div class="e">&ldquo;Add bacon to Stop &amp; Shop&rdquo;</div>' +
@@ -356,7 +378,7 @@ document.addEventListener("click", function (e) {
   else if (a === "pushgo") { put("settings", "pushreq", {value: Date.now() + "|go"}); $("sheetBody").innerHTML = pushHtml(); }
   else if (a === "cookit") { var rc2 = byId(D.recipes, id); if (rc2) { var ml = meals(); ml[id] = today(); put("settings", "meallog", {value: JSON.stringify(ml)}); st.chat.push({who: "ai", t: "Lovely. I logged " + esc(rc2.name) + " as made today. Enjoy it" + (me.name ? ", " + esc(me.name) : "") + "."}); st.tab = "cook"; render(); toast("Logged " + rc2.name + "."); } }
   else if (a === "liaask") { liaSay(el.getAttribute("data-q")); }
-  else if (a === "liasend") { var li = $("liain"), lv = li ? li.value.trim() : ""; if (lv) liaSay(lv); }
+  else if (a === "liasend") { var li = $("liain"), lv = li ? li.value.trim() : ""; if (lv) { li.value = ""; liaSay(lv); } }
   else if (a === "newitem") { var ie = $(el.getAttribute("data-in")), iv = ie ? (el.getAttribute("data-in") === "ask" ? parseAdd(ie.value).items[0] : ie.value.trim()) : "", ist = el.getAttribute("data-in") === "ask" && ie ? parseAdd(ie.value).store : st.store; if (iv) { var nmN = iv.charAt(0).toUpperCase() + iv.slice(1); addLine({name: nmN, size: "", cat: guessCat(iv), store: ist, qty: 1, status: "list", note: "New item", addedBy: me.name}); st.store = ist; if (ie) ie.value = ""; render(); toast("Added " + nmN + " to " + ist + "."); } }
   else if (a === "close") { closeSheet(); }
 });
