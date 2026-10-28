@@ -136,6 +136,62 @@ textarea.f{width:100%;font:inherit;padding:12px;border-radius:12px;border:1px so
 .who{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
 .who .btn{min-width:90px}
 .err{color:var(--warn);font-size:13px;margin-top:6px}
+
+/* ---- v7 premium layer ---- */
+svg.i{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;display:block;margin:0 auto 2px}
+.nav div{grid-template-columns:repeat(5,1fr)}
+.tab{font-size:11.5px}
+.mic{display:grid;place-items:center;margin:0 auto;font-size:0;background:linear-gradient(160deg,color-mix(in srgb,var(--terra) 88%,#fff),var(--terra) 60%,color-mix(in srgb,var(--terra) 75%,#000));box-shadow:0 0 0 10px color-mix(in srgb,var(--terra) 16%,transparent),0 10px 26px rgba(120,60,30,.35)}
+.mic svg{width:38px;height:38px;stroke:#fff;stroke-width:1.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.trash svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;margin:auto;display:block}
+.snap{display:flex;align-items:center;gap:8px}.snap svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.pushbar{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#2f5a3d,#244a31);color:#fff;border:0;border-radius:18px;width:100%;padding:12px 14px;margin:14px 0;cursor:pointer;text-align:left;font:inherit;min-height:60px;box-shadow:var(--shadow)}
+.pushbar .ic svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.pushbar b{font:600 18px var(--serif);display:block}.pushbar small{opacity:.9;font-size:13px}
+.pushbar .go{margin-left:auto;background:#fff;color:#2f5a3d;border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.pgo{width:100%;border:0;border-radius:16px;min-height:56px;font:600 18px var(--serif);background:var(--terra);color:var(--terra-ink);cursor:pointer}
+.pgo[disabled]{opacity:.7}.pgo.done{background:var(--green);color:var(--green-ink)}.pgo.bad{background:var(--warn);color:#fff}
+.pmsg{margin:12px 4px 0;font-size:14px;color:var(--muted);text-align:center}.pmsg b{color:var(--ink)}
+.pnever{font-size:12px;text-align:center;color:var(--muted);margin-top:10px}
+.dots{display:inline-block;width:1.2em;text-align:left;animation:dd 1.2s steps(4,end) infinite}
+@keyframes dd{0%{clip-path:inset(0 100% 0 0)}100%{clip-path:inset(0 0 0 0)}}
+.lhero{display:flex;align-items:flex-end;gap:6px;margin:10px 0 6px;min-height:300px}
+.lia{flex:none;width:150px;position:relative;margin-left:-4px}
+.lia img{display:block;width:150px;height:auto;filter:drop-shadow(0 6px 8px rgba(60,40,20,.18))}
+.lia img.b{position:absolute;left:0;top:0;opacity:0;animation:blink 4s infinite}
+.lhero .say{position:relative;margin-bottom:172px;max-width:210px;background:var(--card);border:1px solid var(--line);border-radius:18px 18px 18px 4px;padding:10px 13px;font:500 18px/1.25 var(--serif);box-shadow:var(--shadow)}
+.lhero .say small{display:block;font:13px system-ui;color:var(--muted);margin-top:4px}
+.lhero .say:before{content:"";position:absolute;left:-7px;bottom:12px;width:14px;height:14px;background:var(--card);border-left:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
+.face{position:relative;border-radius:50%;overflow:hidden;background:var(--chip);border:1px solid var(--line);flex:none;width:44px;height:44px}
+.face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.face img.b{opacity:0;animation:blink 4s infinite 1.1s}
+@keyframes blink{0%,90%,100%{opacity:0}92%,96%{opacity:1}}
+.chat{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:15px;line-height:1.4}
+.msg.me{align-self:flex-end;background:var(--terra);color:var(--terra-ink);border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
+.aiRow{display:flex;gap:8px;align-items:flex-end}.aiRow .msg{max-width:calc(88% - 52px)}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.opt{border:1px solid var(--green);background:transparent;color:var(--green);border-radius:999px;padding:7px 12px;font:inherit;font-size:14px;min-height:38px;cursor:pointer}
+.opt.fill{background:var(--green);color:var(--green-ink)}
+.made{font-size:12px;color:var(--muted)}
+.mini{display:flex;gap:10px;align-items:center;background:var(--chip);border-radius:14px;padding:8px 10px;margin-top:8px;font-size:14px}
+.mini .pic{width:44px;height:44px;border-radius:10px;background:center/cover;flex:none}
+.bar2{position:sticky;bottom:78px;display:flex;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 14px;box-shadow:var(--shadow);margin-top:10px}
+.bar2 input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;min-height:44px}
+.round{width:46px;height:46px;border-radius:50%;border:0;background:var(--terra);color:var(--terra-ink);cursor:pointer;display:grid;place-items:center}
+.round svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.vcard{padding:18px}.vtop{display:flex;align-items:center;gap:10px}.vtop h3{flex:1;font:600 22px var(--serif);margin:0}
+.lead{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,color-mix(in srgb,var(--green) 14%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--green) 40%,var(--line));border-radius:18px;padding:10px;margin:12px 0}
+.lead .pic{width:72px;height:72px;border-radius:14px;background:center/cover;flex:none}.lead b{font:600 19px var(--serif)}
+.lead .cookit{margin-left:auto;border:0;background:var(--green);color:var(--green-ink);border-radius:999px;padding:10px 14px;font:600 14px system-ui;min-height:42px;cursor:pointer;white-space:nowrap}
+.vopt{display:flex;align-items:center;gap:12px;padding:9px 0;border:0;border-top:1px solid var(--line);cursor:pointer;background:none;width:100%;font:inherit;color:var(--ink);text-align:left}
+.vopt .pic{width:46px;height:46px;border-radius:12px;background:center/cover;flex:none}
+.vopt .vb{height:6px;border-radius:6px;background:var(--chip);margin-top:6px}.vopt .vb i{display:block;height:100%;border-radius:6px;background:var(--terra)}
+.vopt .rad{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;flex:none}
+.vopt[aria-pressed="true"] .rad{background:var(--green);border-color:var(--green);color:#fff}.vopt .rad svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.av{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--terra);color:#fff;font-size:11px;font-weight:700;margin-left:-6px;border:2px solid var(--card)}
+.sugg{position:relative;z-index:4;box-shadow:0 10px 30px rgba(60,40,20,.25)}
+.sugg button.new{background:var(--chip)}
 </style>
 </head>
 <body>
@@ -143,7 +199,7 @@ textarea.f{width:100%;font:inherit;padding:12px;border-radius:12px;border:1px so
   <div class="banner" id="status">Loading your kitchen...</div>
   <div id="view"></div>
 </div>
-<button class="btn snap" id="snap" aria-label="Add photos">&#128247; Snap photos</button>
+<button class="btn snap" id="snap" aria-label="Add photos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Snap photos</button>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <nav class="nav" aria-label="Main"><div id="tabs" role="tablist"></div></nav>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shT" hidden><div class="in" id="sheetBody"></div></div>

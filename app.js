@@ -8,9 +8,11 @@ var order = ["list", "cart", "ordered"], lab = {list: "On list", cart: "In cart"
 var banners = {"Fridge": "img/fridge.jpg", "Pantry": "img/pantry.jpg", "Freezer": "img/freezer.jpg"};
 var TABS = ["list", "catalog", "pantry", "recipes", "votes", "members", "settings"];
 var D = {list: [], catalog: [], pantry: [], recipes: [], votes: [], members: [], settings: []};
-var st = {tab: "home", store: "Stop & Shop", typing: false, loaded: false, gate: false, err: "", lastSync: 0};
+var st = {chat: [], pushOpen: false, tab: "home", store: "Stop & Shop", typing: false, loaded: false, gate: false, err: "", lastSync: 0};
 var me = {name: ls("pfk_name") || "", pin: ls("pfk_pin") || ""};
 
+var P={home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',cart:'<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h3l2.4 11.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.7L20.5 8H6.2"/>',cook:'<path d="M5 10h14v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 10h18M9 6.5c0-1.6 1-1.6 1-3.2M14 6.5c0-1.6 1-1.6 1-3.2"/>',pantry:'<rect x="6.5" y="3" width="11" height="3" rx="1"/><path d="M7.5 6v14a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V6M7.5 11h9"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 1 2-2h13v3H6a2 2 0 0 1-2-1zM9 7h6"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',send:'<path d="M4 12L20 4l-6 16-3-7z"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'};
+function ic(n,c){return '<svg class="'+(c||'i')+'" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>';}
 /* ---------- small utils ---------- */
 function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]; }); }
@@ -19,8 +21,8 @@ function rid() { var s = ""; while (s.length < 12) s += Math.random().toString(3
 function today() { var d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
 function byId(arr, id) { for (var i = 0; i < arr.length; i++) if (String(arr[i].id) === String(id)) return arr[i]; return null; }
 function toast(m) { var t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 4200); }
-function sheet(h, gate) { st.gate = !!gate; $("sheetBody").innerHTML = h; $("sheet").hidden = false; }
-function closeSheet(force) { if (st.gate && !force) return; st.gate = false; $("sheet").hidden = true; }
+function sheet(h, gate) { st.gate = !!gate; if (!/Send to Stop/.test(h)) st.pushOpen = false; $("sheetBody").innerHTML = h; $("sheet").hidden = false; }
+function closeSheet(force) { if (st.gate && !force) return; st.gate = false; st.pushOpen = false; $("sheet").hidden = true; }
 function safeParse(s, d) { try { var v = JSON.parse(s); return v == null ? d : v; } catch (e) { return d; } }
 function kwList(c) { return String(c.kw || "").split("|").map(function (x) { return x.trim().toLowerCase(); }).filter(Boolean); }
 
@@ -67,7 +69,7 @@ function applyAll(data) {
   TABS.forEach(function (t) { D[t] = (data[t] || []).slice(); });
   D.recipes.forEach(function (r) { r.ings = Array.isArray(r.ings) ? r.ings : safeParse(r.ings, []); });
   st.loaded = true; st.lastSync = Date.now(); st.err = "";
-  if (j !== lastJSON) { lastJSON = j; render(); } else setStatus();
+  if (j !== lastJSON) { lastJSON = j; render(); if (st.pushOpen && !$("sheet").hidden) $("sheetBody").innerHTML = pushHtml(); } else setStatus();
 }
 function poll() {
   if (!CFG.api || !me.pin || pending || polling) return Promise.resolve();
@@ -123,7 +125,8 @@ function showSugg(id, q) {
   var box = $(id === "ask" ? "sugg" : "sugg2"); if (!box) return;
   var m = q; if (id === "ask") { var p = parseAdd(q); m = p.items[0] || ""; }
   var r = suggest(m);
-  box.innerHTML = r.map(function (c) { return '<button data-act="pickcat" data-id="' + esc(c.id) + '" data-in="' + id + '">' + thumb(c.cat, c.brand || c.name) + '<span class="grow"><b>' + esc(c.brand || c.name) + '</b><div class="hint">' + esc([c.size, c.timesBought ? "bought " + c.timesBought + "x" : ""].filter(Boolean).join(" · ")) + '</div></span><span class="hint">+ add</span></button>'; }).join("");
+  var nm = (m || "").trim(), extra = nm.length >= 2 ? '<button class="new" data-act="newitem" data-in="' + id + '"><div class="thumb" style="background-image:url(img/c/' + guessCat(nm) + '.jpg)"></div><span class="grow"><b>Add &ldquo;' + esc(nm) + '&rdquo; as a new item</b><div class="hint">New to the app. It will be remembered for next time.</div></span><span class="chip">New</span></button>' : "";
+  box.innerHTML = r.map(function (c) { return '<button data-act="pickcat" data-id="' + esc(c.id) + '" data-in="' + id + '">' + thumb(c.cat, c.brand || c.name) + '<span class="grow"><b>' + esc(c.brand || c.name) + '</b><div class="hint">' + esc([c.size, c.timesBought ? "bought " + c.timesBought + "x" : ""].filter(Boolean).join(" · ")) + '</div></span><span class="chip ok">Add</span></button>'; }).join("") + extra;
 }
 
 /* ---------- list actions ---------- */
@@ -175,7 +178,7 @@ function itemRows(items) {
   return items.map(function (i) { return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, i.note, i.addedBy ? "added by " + i.addedBy : ""].filter(Boolean).join(" · ")) + '</div>' +
     '<button class="pill" data-s="' + esc(i.status) + '" data-act="cycle" data-id="' + esc(i.id) + '" aria-label="Status ' + (lab[i.status] || "") + ', tap to change">' + (lab[i.status] || "On list") + '</button></div>' +
     '<div class="step"><button data-act="dec" data-id="' + esc(i.id) + '" aria-label="Less">&minus;</button><span>' + (i.qty || 1) + '</span><button data-act="inc" data-id="' + esc(i.id) + '" aria-label="More">+</button></div>' +
-    '<button class="trash" data-act="del" data-id="' + esc(i.id) + '" aria-label="Remove ' + esc(i.name) + '">&#128465;</button></div>'; }).join("");
+    '<button class="trash" data-act="del" data-id="' + esc(i.id) + '" aria-label="Remove ' + esc(i.name) + '">' + ic("x","") + '</button></div>'; }).join("");
 }
 function storeSeg() { return '<div class="seg" role="group" aria-label="Store">' + stores.map(function (s) { var n = itemsFor(s).filter(function (i) { return i.status !== "ordered"; }).length; return '<button data-act="store" data-v="' + esc(s) + '" aria-pressed="' + (st.store === s) + '">' + esc(s) + (n ? "<b>" + n + "</b>" : "") + "</button>"; }).join("") + "</div>"; }
 function reviewBtn() { var n = itemsFor(st.store).length; return '<button class="big" data-act="review">Review cart (' + n + " item" + (n === 1 ? "" : "s") + ") &rsaquo;</button>"; }
@@ -185,19 +188,79 @@ function dealsHtml(max) {
   return '<div class="card"><h3>On sale from your usual items</h3><p class="sub" style="margin:6px 0 4px">Seen on Stop &amp; Shop ' + esc(ds[0].seen || "") + ". You decide what goes on the list.</p>" +
     ds.map(function (d, i) { return '<div class="deal"><div class="grow"><b>' + esc(d.name) + '</b><div class="sub"><span style="color:var(--ok);font-weight:700">$' + esc(d.sale) + '</span> <span class="was">$' + esc(d.was) + "</span>" + (d.note ? " &middot; " + esc(d.note) : "") + '</div></div><button class="btn sm" data-act="adddeal" data-id="' + i + '">+ List</button></div>'; }).join("") + "</div>";
 }
+function meals() { var d = byId(D.settings, "meallog"); return d ? safeParse(d.value, {}) : {}; }
+function ago(ymd) { if (!ymd) return "not logged yet"; var s = String(ymd), d = new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)), n = Math.round((new Date(new Date().toDateString()) - d) / 864e5); return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 14 ? n + " days ago" : n < 60 ? Math.round(n / 7) + " weeks ago" : Math.round(n / 30) + " months ago"; }
+function lastMade(id) { return ago(meals()[id]); }
+function rpic(r) { return "background-image:url(" + recImg(r) + ")"; }
 function voteCard() {
-  var day = today(), vs = D.votes.filter(function (v) { return Number(v.day) === day; }), mine = vs.filter(function (v) { return v.voter === me.name; })[0], counts = {};
-  vs.forEach(function (v) { counts[v.recipeId] = (counts[v.recipeId] || 0) + 1; });
+  var day = today(), vs = D.votes.filter(function (v) { return Number(v.day) === day; }), mine = vs.filter(function (v) { return v.voter === me.name; })[0], counts = {}, who = {};
+  vs.forEach(function (v) { counts[v.recipeId] = (counts[v.recipeId] || 0) + 1; (who[v.recipeId] = who[v.recipeId] || []).push(v.voter || "?"); });
   var top = null; Object.keys(counts).forEach(function (k) { if (!top || counts[k] > counts[top]) top = k; });
-  var tr = top ? byId(D.recipes, top) : null;
-  return '<div class="card"><div class="row"><h3 class="grow">What&rsquo;s for dinner?</h3><button class="linkbtn" data-act="suggest">Suggest a meal</button></div>' +
-    '<p class="sub" style="margin:6px 0 0">' + (tr ? "Leading: <b>" + esc(tr.name) + "</b> with " + counts[top] + " vote" + (counts[top] === 1 ? "" : "s") + "." : "Tap your pick. One vote each, change it any time.") + "</p>" +
-    '<div class="votes">' + D.recipes.slice(0, 12).map(function (r) { return '<button class="vote" data-act="vote" data-id="' + esc(r.id) + '" aria-pressed="' + (!!mine && mine.recipeId === r.id) + '">' + esc(r.name) + (counts[r.id] ? "<b>" + counts[r.id] + "</b>" : "") + "</button>"; }).join("") + "</div></div>";
+  var tr = top ? byId(D.recipes, top) : null, tot = vs.length;
+  var h = '<div class="card vcard"><div class="vtop"><h3>Dinner vote</h3><span class="chip">' + new Date().toLocaleDateString([], {weekday: "long"}) + '</span></div><p class="sub" style="margin:4px 0 0">One vote each. Change yours any time.</p>';
+  if (tr) h += '<div class="lead"><div class="pic" style="' + rpic(tr) + '"></div><div><div class="made">Leading with ' + counts[top] + " vote" + (counts[top] === 1 ? "" : "s") + '</div><b>' + esc(tr.name) + '</b><div class="made">Last made ' + lastMade(tr.id) + '</div></div><button class="cookit" data-act="cookit" data-id="' + esc(tr.id) + '">Cook this</button></div>';
+  D.recipes.slice(0, 5).forEach(function (r) {
+    var v = who[r.id] || [], m = !!mine && mine.recipeId === r.id;
+    h += '<button class="vopt" data-act="vote" data-id="' + esc(r.id) + '" aria-pressed="' + m + '"><div class="pic" style="' + rpic(r) + '"></div><div class="grow"><b>' + esc(r.name) + '</b><div class="vb"><i style="width:' + (tot ? Math.round(v.length / tot * 100) : 0) + '%"></i></div></div><div>' + v.map(function (n) { return '<span class="av">' + esc(String(n).charAt(0).toUpperCase()) + "</span>"; }).join("") + '</div><span class="rad">' + (m ? ic("check", "") : "") + "</span></button>";
+  });
+  return h + '<button class="linkbtn" data-act="suggest" style="margin-top:6px">Suggest a meal that is not on the list</button></div>';
 }
+/* ---------- push to cart (fills the cart only; never checks out) ---------- */
+function pushInfo() {
+  var rq = byId(D.settings, "pushreq"), pu = byId(D.settings, "push"), req = rq ? String(rq.value || "").split("|") : [], ms = Number(req[0]) || 0;
+  var list = itemsFor("Stop & Shop"), n = list.filter(function (i) { return i.status === "list"; }).length, c = list.filter(function (i) { return i.status === "cart"; }).length;
+  var o = {n: n, c: c, s: "idle", t: ""};
+  if (ms && Date.now() - ms < 12 * 36e5) {
+    var p = pu ? String(pu.value || "").split("|") : [];
+    if (p[1] && Number(p[1]) === ms) { o.s = p[0] === "done" ? "done" : p[0] === "working" ? "working" : "bad"; o.t = p.slice(2).join("|"); }
+    else o.s = (Date.now() - ms > 90 * 6e4) ? "late" : "sent";
+  }
+  return o;
+}
+function pushHtml() {
+  var o = pushInfo(), d = '<span class="dots">...</span>', b, cls = "", dis = false, m;
+  if (o.s === "idle") { b = "Send to Stop &amp; Shop cart"; m = "<b>" + o.n + " item" + (o.n === 1 ? "" : "s") + "</b> waiting. " + o.c + " already in the cart."; }
+  else if (o.s === "sent") { b = "Sent"; dis = true; m = "Waiting for the kitchen PC to pick it up" + d + " It checks about once an hour."; }
+  else if (o.s === "late") { b = "Still waiting"; cls = "bad"; m = "The kitchen PC has not picked it up yet. Tap to send again, or ask Ifoma to say &ldquo;push&rdquo; in Claude for an instant fill."; }
+  else if (o.s === "working") { b = "Filling your cart"; dis = true; m = "The kitchen PC is adding items now" + d + " You can close the app."; }
+  else if (o.s === "done") { b = "In your cart"; cls = "done"; m = "<b>" + esc(o.t || "Cart filled.") + "</b> Ifoma: pick a pickup time and place the order. Tap to send again."; }
+  else { b = "Couldn&rsquo;t finish"; cls = "bad"; m = esc(o.t || "Something went wrong.") + " Tap to try again, or ask Ifoma to say &ldquo;push&rdquo; in Claude."; }
+  return '<h3 id="shT">Send to Stop &amp; Shop</h3><button class="pgo ' + cls + '" data-act="pushgo"' + (dis ? " disabled" : "") + ">" + b + '</button><div class="pmsg">' + m + '</div><div class="pnever">The app only fills the cart. Ifoma picks the time and places every order.</div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>';
+}
+function pushBar() {
+  var o = pushInfo(), sub = o.s === "done" ? "Cart filled. Open it to review." : o.s === "sent" || o.s === "working" ? "On its way" : o.n + " to add, " + o.c + " already in the cart";
+  return '<button class="pushbar" data-act="push"><span class="ic">' + ic("cart", "") + '</span><span><b>Send to Stop &amp; Shop</b><small>' + sub + '</small></span><span class="go">Push</span></button>';
+}
+/* ---------- Lia, the cooking buddy (runs on the family list, pantry and meal log; no account needed) ---------- */
+function face() { return '<div class="face"><img class="a" src="img/lia/f.png" alt=""><img class="b" src="img/lia/f-b.png" alt=""></div>'; }
+function tonight() {
+  var ml = meals(), rs = D.recipes.map(function (r) { var ig = recipeIngs(r), need = ig.filter(function (x) { return x.s === "need"; }).length; return {r: r, has: ig.length > 0, need: need, last: ml[r.id] || 0}; });
+  rs.sort(function (x, y) { return (x.has ? 0 : 1) - (y.has ? 0 : 1) || x.need - y.need || x.last - y.last; });
+  return rs.slice(0, 3);
+}
+function miniRec(x) {
+  var r = x.r;
+  return '<div class="mini"><div class="pic" style="' + rpic(r) + '"></div><div class="grow"><b>' + esc(r.name) + '</b><div class="made">' + (x.has ? (x.need ? x.need + " to buy" : "You have everything") : "No ingredient list yet") + " &middot; last made " + lastMade(r.id) + '</div></div></div>' +
+    '<div class="opts"><button class="opt fill" data-act="cookit" data-id="' + esc(r.id) + '">We&rsquo;re cooking this</button>' + (x.need ? '<button class="opt" data-act="addneed" data-id="' + esc(r.id) + '">Add ' + x.need + " to Needs</button>" : "") + "</div>";
+}
+function liaAnswer(q) {
+  q = (q || "").toLowerCase();
+  var m = q.match(/^\s*(?:add|need|get)\s+(.+)$/);
+  if (m) { var p = parseAdd(q); p.items.forEach(function (n) { addByName(n, p.store); }); return "Done. I put " + esc(p.items.join(", ")) + " on your " + esc(p.store) + " list."; }
+  var t = tonight(); if (!t.length) return "I do not have any bangers saved yet. Add a few on the Bangers tab and I can start suggesting dinners.";
+  return "Here is what I would cook, based on what you have and what has not been made in a while:" + t.map(miniRec).join("");
+}
+function cook() {
+  var h = '<div class="lhero"><div class="lia"><img class="a" src="img/lia/lia.png" alt="Lia, your cooking buddy"><img class="b" src="img/lia/lia-b.png" alt=""></div><div class="say">Hi' + (me.name ? " " + esc(me.name) : "") + ', I&rsquo;m Lia. Hungry?<small>Ask me anything about dinner.</small></div></div><div class="chat">';
+  if (!st.chat.length) h += '<div class="aiRow">' + face() + '<div class="msg ai">Tap one to start.<div class="opts"><button class="opt fill" data-act="liaask" data-q="What can we cook tonight?">What can we cook tonight?</button><button class="opt" data-act="tab" data-v="recipes">Open Bangers</button></div></div></div>';
+  st.chat.forEach(function (c) { h += c.who === "me" ? '<div class="msg me">' + esc(c.t) + "</div>" : '<div class="aiRow">' + face() + '<div class="msg ai">' + c.t + "</div></div>"; });
+  return h + '</div><div class="bar2"><input type="text" id="liain" placeholder="Ask Lia, or say: add butter" aria-label="Ask Lia" autocomplete="off" enterkeyhint="send"><button class="round" data-act="liasend" aria-label="Send">' + ic("send", "") + "</button></div>";
+}
+function liaSay(q) { st.chat.push({who: "me", t: q}); st.chat.push({who: "ai", t: liaAnswer(q)}); render(); setTimeout(function () { window.scrollTo(0, document.body.scrollHeight); }, 30); }
 function home() {
   return '<section class="hero"><img class="logo" src="img/logo.png" alt="Pierre Family Kitchen"><h2>What does the family need today?</h2>' +
-    '<div class="micwrap"><button class="mic" data-act="typing" aria-label="Tap to talk or type">&#127908;</button><div class="t">Tap to talk</div><div class="e">&ldquo;Add bacon to Stop &amp; Shop&rdquo;</div>' +
-    (st.typing ? '<div class="ask"><div class="grow"><input type="text" id="ask" placeholder="Add milk to Instacart" aria-label="Request" autocomplete="off" enterkeyhint="send"></div><button class="btn" data-act="send">Add</button></div><div class="sugg" id="sugg"></div><div class="e" style="font-size:13px;margin-top:6px">Tap the microphone on your keyboard to speak it.</div>' : '<button class="linkbtn" data-act="typing">or type it instead</button>') + "</div></section>" +
+    '<div class="micwrap"><button class="mic" data-act="typing" aria-label="Tap to talk or type">' + ic("mic","") + '</button><div class="t">Tap to talk</div><div class="e">&ldquo;Add bacon to Stop &amp; Shop&rdquo;</div>' +
+    (st.typing ? '<div class="ask"><div class="grow"><input type="text" id="ask" placeholder="Add milk to Instacart" aria-label="Request" autocomplete="off" enterkeyhint="send"></div><button class="btn" data-act="send">Add</button></div><div class="sugg" id="sugg"></div><div class="e" style="font-size:13px;margin-top:6px">Tap the microphone on your keyboard to speak it.</div>' : '<button class="linkbtn" data-act="typing">or type it instead</button>') + "</div></section>" + pushBar() +
     '<div class="card"><div class="row"><h3 class="grow">Shopping</h3><button class="linkbtn" data-act="tab" data-v="shop">Open &rsaquo;</button></div>' + storeSeg() + itemRows(itemsFor(st.store).slice(0, 3)) + reviewBtn() + "</div>" +
     voteCard() +
     '<div class="tiles"><button class="tile" style="background-image:url(img/pantry.jpg)" data-act="tab" data-v="pantry"><div class="tx"><h3>Pantry</h3><div class="sub">' + D.pantry.length + ' items tracked</div></div></button>' +
@@ -208,7 +271,7 @@ function home() {
 function pageTop(t, s) { return '<div class="top"><div><h1>' + t + "</h1><small>" + s + "</small></div></div>"; }
 function shop() {
   var any = itemsFor(st.store).some(function (i) { return i.status === "ordered"; });
-  return pageTop("Shopping", "You review and place every order") + '<div class="card">' + storeSeg() + itemRows(itemsFor(st.store)) + reviewBtn() + (any ? '<button class="big alt" data-act="clearordered">Clear ordered items</button>' : "") + "</div>" +
+  return pageTop("Things we need", "You review and place every order") + '<div class="card">' + storeSeg() + itemRows(itemsFor(st.store)) + reviewBtn() + (any ? '<button class="big alt" data-act="clearordered">Clear ordered items</button>' : "") + "</div>" +
     '<div class="card"><b>Add an item</b><div class="sub">To ' + esc(st.store) + '. Start typing and your usual items appear.</div><div class="ask" style="margin-top:8px"><div class="grow"><input type="text" id="ask2" placeholder="e.g. syrup" aria-label="Item" autocomplete="off" enterkeyhint="send"></div><button class="btn" data-act="send2">Add</button></div><div class="sugg" id="sugg2"></div></div>' +
     dealsHtml(6) + '<p class="sub">Only you move an item to &ldquo;Ordered by you.&rdquo; Tell Claude when you are ready for a cart to be filled. Claude never places the order.</p>';
 }
@@ -225,9 +288,9 @@ function pan() {
   return h + '<p class="sub">&ldquo;Check&rdquo; means estimated from recent orders. Tap to confirm, then Low or Out as things run down. When you mark an order as placed, those items land here as OK.</p>';
 }
 function rec() {
-  return pageTop("Recipes", "Family favorites and new finds") +
+  return pageTop("Bangers", "Family favorites and new finds") +
     '<div class="card row"><div class="grow"><h3>Suggest a meal</h3><div class="sub">Anyone can add one. Send Claude a screenshot to turn it into a full recipe.</div></div><button class="btn" data-act="suggest">Add</button></div>' +
-    (D.recipes.length ? '<div class="grid2">' + D.recipes.map(function (r) { var n = recipeIngs(r).filter(function (x) { return x.s === "need"; }).length; return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + recImg(r) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + '<div class="sub">' + (r.ings && r.ings.length ? n + " to buy" : (r.addedBy ? "suggested by " + esc(r.addedBy) : "suggested")) + "</div></div></button>"; }).join("") + "</div>" : '<p class="empty">No recipes yet.</p>') +
+    (D.recipes.length ? '<div class="grid2">' + D.recipes.map(function (r) { var n = recipeIngs(r).filter(function (x) { return x.s === "need"; }).length; return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + recImg(r) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + '<div class="sub">' + (r.ings && r.ings.length ? n + " to buy" : (r.addedBy ? "suggested by " + esc(r.addedBy) : "suggested")) + " &middot; made " + lastMade(r.id) + "</div></div></button>"; }).join("") + "</div>" : '<p class="empty">No recipes yet.</p>') +
     '<p class="sub" style="margin-top:12px">Starter recipes are for a family of 8. Tell Claude your real versions and they replace them.</p>';
 }
 function recipeSheet(id) {
@@ -238,14 +301,15 @@ function recipeSheet(id) {
       (need.length ? '<button class="big" data-act="addneed" data-id="' + esc(r.id) + '">Add ' + need.length + " missing to " + esc(st.store) + " list</button>" : "<p>You have everything.</p>") : '<p class="sub" style="margin:10px 0">No ingredient list yet. Send Claude the recipe and it will fill this in.</p>') +
     '<button class="linkbtn" data-act="close">Close</button>';
 }
-var views = {home: home, shop: shop, pantry: pan, recipes: rec};
-var tabs = [["home", "Home", "⌂"], ["shop", "Shopping", "🛒"], ["pantry", "Pantry", "🥫"], ["recipes", "Recipes", "📖"]];
+var views = {home: home, shop: shop, cook: cook, pantry: pan, recipes: rec};
+var tabs = [["home", "Home", "home"], ["shop", "Needs", "cart"], ["cook", "Cook", "cook"], ["pantry", "Pantry", "pantry"], ["recipes", "Bangers", "book"]];
 function render() {
-  var a = document.activeElement, keep = a && a.id && /^ask2?$/.test(a.id) ? {id: a.id, v: a.value} : null;
+  var a = document.activeElement, keep = a && a.id && /^(ask2?|liain)$/.test(a.id) ? {id: a.id, v: a.value} : null;
   $("view").innerHTML = views[st.tab]();
-  $("tabs").innerHTML = tabs.map(function (t) { return '<button class="tab" role="tab" aria-selected="' + (st.tab === t[0]) + '" data-act="tab" data-v="' + t[0] + '"><i aria-hidden="true">' + t[2] + "</i>" + t[1] + "</button>"; }).join("");
+  $("tabs").innerHTML = tabs.map(function (t) { return '<button class="tab" role="tab" aria-selected="' + (st.tab === t[0]) + '" data-act="tab" data-v="' + t[0] + '">' + ic(t[2]) + t[1] + "</button>"; }).join("");
+  $("snap").hidden = st.tab === "cook";
   setStatus();
-  if (keep) { var el = $(keep.id); if (el) { el.value = keep.v; el.focus(); showSugg(keep.id, keep.v); } }
+  if (keep) { var el = $(keep.id); if (el) { el.value = keep.v; el.focus(); if (keep.id !== "liain") showSugg(keep.id, keep.v); } }
 }
 
 /* ---------- gates: PIN and who-are-you ---------- */
@@ -288,12 +352,19 @@ document.addEventListener("click", function (e) {
   else if (a === "who") { showWho(); }
   else if (a === "iam") { setMe(el.getAttribute("data-v")); }
   else if (a === "addme") { var nn = $("newName").value.trim(); if (!nn) return; if (!D.members.some(function (m) { return m.name.toLowerCase() === nn.toLowerCase(); })) put("members", null, {name: nn}); setMe(nn); }
+  else if (a === "push") { st.pushOpen = true; sheet(pushHtml()); }
+  else if (a === "pushgo") { put("settings", "pushreq", {value: Date.now() + "|go"}); $("sheetBody").innerHTML = pushHtml(); }
+  else if (a === "cookit") { var rc2 = byId(D.recipes, id); if (rc2) { var ml = meals(); ml[id] = today(); put("settings", "meallog", {value: JSON.stringify(ml)}); st.chat.push({who: "ai", t: "Lovely. I logged " + esc(rc2.name) + " as made today. Enjoy it" + (me.name ? ", " + esc(me.name) : "") + "."}); st.tab = "cook"; render(); toast("Logged " + rc2.name + "."); } }
+  else if (a === "liaask") { liaSay(el.getAttribute("data-q")); }
+  else if (a === "liasend") { var li = $("liain"), lv = li ? li.value.trim() : ""; if (lv) liaSay(lv); }
+  else if (a === "newitem") { var ie = $(el.getAttribute("data-in")), iv = ie ? (el.getAttribute("data-in") === "ask" ? parseAdd(ie.value).items[0] : ie.value.trim()) : "", ist = el.getAttribute("data-in") === "ask" && ie ? parseAdd(ie.value).store : st.store; if (iv) { var nmN = iv.charAt(0).toUpperCase() + iv.slice(1); addLine({name: nmN, size: "", cat: guessCat(iv), store: ist, qty: 1, status: "list", note: "New item", addedBy: me.name}); st.store = ist; if (ie) ie.value = ""; render(); toast("Added " + nmN + " to " + ist + "."); } }
   else if (a === "close") { closeSheet(); }
 });
 document.addEventListener("input", function (e) { if (e.target.id === "ask" || e.target.id === "ask2") showSugg(e.target.id, e.target.value); });
 document.addEventListener("keydown", function (e) {
   if (e.key === "Enter" && (e.target.id === "ask" || e.target.id === "ask2")) { var b = document.querySelector('[data-act="' + (e.target.id === "ask" ? "send" : "send2") + '"]'); if (b) b.click(); }
   if (e.key === "Enter" && e.target.id === "pinIn") { var s = document.querySelector('[data-act="savepin"]'); if (s) s.click(); }
+  if (e.key === "Enter" && e.target.id === "liain") { var lb = document.querySelector('[data-act="liasend"]'); if (lb) lb.click(); }
   if (e.key === "Escape") closeSheet();
 });
 function reviewSheet() {
