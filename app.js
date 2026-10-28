@@ -288,7 +288,7 @@ function home() {
     '<div class="tiles"><button class="tile" style="background-image:url(img/pantry.jpg)" data-act="tab" data-v="pantry"><div class="tx"><h3>Pantry</h3><div class="sub">' + D.pantry.length + ' items tracked</div></div></button>' +
     '<button class="tile" style="background-image:url(img/meals.jpg)" data-act="tab" data-v="recipes"><div class="tx"><h3>Tonight&rsquo;s meals</h3><div class="sub">For a family of 8</div></div></button></div>' +
     '<div class="card"><div class="row"><h3 class="grow">Saved recipes</h3><button class="linkbtn" data-act="tab" data-v="recipes">See all &rsaquo;</button></div>' + (D.recipes.length ? '<div class="scroller">' + D.recipes.map(rc).join("") + "</div>" : '<p class="empty">No recipes yet.</p>') + "</div>" +
-    dealsHtml(3) + '<button class="big" style="background:var(--terra);color:var(--terra-ink)" data-act="family">Usual brands and family preferences</button>';
+    dealsHtml(3) + '<button class="big" style="background:var(--terra);color:var(--terra-ink)" data-act="family">Usual brands and family preferences</button>' + (standalone() ? "" : '<button class="linkbtn" style="display:block;margin:12px auto 0" data-act="showinstall">Install this as an app on your phone</button>');
 }
 function pageTop(t, s) { return '<div class="top"><div><h1>' + t + "</h1><small>" + s + "</small></div></div>"; }
 function shop() {
@@ -404,6 +404,27 @@ function familySheet() {
 }
 $("snap").addEventListener("click", function () { sheet(photoHtml()); });
 $("sheet").addEventListener("click", function (e) { if (e.target.id === "sheet") closeSheet(); });
+
+/* ---------- install as an app (home-screen icon) ---------- */
+var deferred = null;
+function standalone() { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true; }
+function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+function showInstall(force) {
+  if (standalone() || $("inst")) return; if (!force && ls("pfk_inst") === "no") return;
+  var ios = isIOS(), can = !!deferred; if (!ios && !can && !force) return;
+  var d = document.createElement("div"); d.className = "inst"; d.id = "inst"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Install the app");
+  d.innerHTML = '<img src="img/icon-192.png" alt=""><div class="grow"><b>Get the Family Kitchen app</b><small>' + (ios && !can ? "Tap the Share button in Safari, then Add to Home Screen." : "Add it to your home screen. It opens full screen like a real app.") + '</small><div class="row2">' + (can ? '<button class="btn sm" data-act="doinstall">Install</button>' : "") + '<button class="btn sm ghost" data-act="noinstall">' + (can ? "Not now" : "Got it") + "</button></div></div>";
+  document.body.appendChild(d);
+}
+function hideInstall() { var d = $("inst"); if (d) d.remove(); }
+window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferred = e; setTimeout(function () { showInstall(); }, 2500); });
+window.addEventListener("appinstalled", function () { hideInstall(); deferred = null; toast("Installed. Look for Family Kitchen on your home screen."); });
+document.addEventListener("click", function (e) { var el = e.target.closest("[data-act]"); if (!el) return; var a = el.getAttribute("data-act");
+  if (a === "doinstall" && deferred) { deferred.prompt(); deferred.userChoice.then(function () { deferred = null; hideInstall(); }); }
+  else if (a === "noinstall") { ls("pfk_inst", "no"); hideInstall(); }
+  else if (a === "showinstall") { ls("pfk_inst", ""); if (deferred || isIOS()) showInstall(true); else sheet('<h3 id="shT">Install the app</h3><p class="sub">On Android Chrome: tap the three dots, then Install app (or Add to Home screen). On iPhone Safari: tap Share, then Add to Home Screen.</p><button class="big" data-act="close">Close</button>'); } });
+if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+if (isIOS()) setTimeout(function () { showInstall(); }, 3500);
 
 /* ---------- boot ---------- */
 function boot() {
