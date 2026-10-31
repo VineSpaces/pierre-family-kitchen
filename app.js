@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v9";
+var BUILD = "v10";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -533,10 +533,17 @@ var deferred = null;
 function standalone() { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true; }
 function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
 function showInstall(force) {
-  if (standalone() || $("inst")) return; if (!force && ls("pfk_inst") === "no") return;
+  if ($("inst") || standalone()) return;
+  var last = Number(ls("pfk_inst")); if (!force && last && Date.now() - last < 7 * 864e5) return;
+  if (st.gate) { setTimeout(function () { showInstall(force); }, 4000); return; }
   var ios = isIOS(), can = !!deferred; if (!ios && !can && !force) return;
-  var d = document.createElement("div"); d.className = "inst"; d.id = "inst"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Install the app");
-  d.innerHTML = '<img src="img/icon-192.png" alt=""><div class="grow"><b>Get the Family Kitchen app</b><small>' + (ios && !can ? "Tap the Share button in Safari, then Add to Home Screen." : "Add it to your home screen. It opens full screen like a real app.") + '</small><div class="row2">' + (can ? '<button class="btn sm" data-act="doinstall">Install</button>' : "") + '<button class="btn sm ghost" data-act="noinstall">' + (can ? "Not now" : "Got it") + "</button></div></div>";
+  var ipad = /ipad/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), steps = ios && !can;
+  var d = document.createElement("div"); d.className = "instshade"; d.id = "inst"; d.setAttribute("role", "dialog"); d.setAttribute("aria-modal", "true"); d.setAttribute("aria-label", "Install the app");
+  d.innerHTML = '<div class="instcard"><img src="img/lia-icon-192.png" alt=""><h3>Put Family Kitchen on your phone</h3>' +
+    (steps ? '<div class="isteps"><div><span class="n">1</span><span>Tap the <b>Share</b> button ' + (ipad ? "at the top" : "below") + '</span></div><div><span class="n">2</span><span>Tap <b>Add to Home Screen</b></span></div><div><span class="n">3</span><span>Tap <b>Add</b></span></div></div>'
+      : '<p>One tap. It opens full screen like a real app, with Lia right on your home screen.</p>') +
+    (can ? '<button class="igo" data-act="doinstall">Install the app</button><button class="ilater" data-act="noinstall">Not now</button>' : '<button class="igo" data-act="noinstall">Got it</button>') + "</div>" +
+    (steps ? '<div class="iarrow ' + (ipad ? "up" : "") + '">Share button is here<span>' + (ipad ? "&#8599;" : "&#8595;") + "</span></div>" : "");
   document.body.appendChild(d);
 }
 function hideInstall() { var d = $("inst"); if (d) d.remove(); }
@@ -544,8 +551,8 @@ window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault()
 window.addEventListener("appinstalled", function () { hideInstall(); deferred = null; toast("Installed. Look for Family Kitchen on your home screen."); });
 document.addEventListener("click", function (e) { var el = e.target.closest("[data-act]"); if (!el) return; var a = el.getAttribute("data-act");
   if (a === "doinstall" && deferred) { deferred.prompt(); deferred.userChoice.then(function () { deferred = null; hideInstall(); }); }
-  else if (a === "noinstall") { ls("pfk_inst", "no"); hideInstall(); }
-  else if (a === "showinstall") { ls("pfk_inst", ""); if (deferred || isIOS()) showInstall(true); else sheet('<h3 id="shT">Install the app</h3><p class="sub">On Android Chrome: tap the three dots, then Install app (or Add to Home screen). On iPhone Safari: tap Share, then Add to Home Screen.</p><button class="big" data-act="close">Close</button>'); } });
+  else if (a === "noinstall") { ls("pfk_inst", String(Date.now())); hideInstall(); }
+  else if (a === "showinstall") { ls("pfk_inst", "0"); if (deferred || isIOS()) showInstall(true); else sheet('<h3 id="shT">Install the app</h3><p class="sub">On Android Chrome: tap the three dots, then Install app (or Add to Home screen). On iPhone Safari: tap Share, then Add to Home Screen.</p><button class="big" data-act="close">Close</button>'); } });
 if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
 if (isIOS()) setTimeout(function () { showInstall(); }, 3500);
 
