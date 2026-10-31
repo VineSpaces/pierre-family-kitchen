@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v10";
+var BUILD = "v11";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -535,7 +535,7 @@ function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navi
 function showInstall(force) {
   if ($("inst") || standalone()) return;
   var last = Number(ls("pfk_inst")); if (!force && last && Date.now() - last < 7 * 864e5) return;
-  if (st.gate) { setTimeout(function () { showInstall(force); }, 4000); return; }
+  if (st.gate) { setTimeout(function () { showInstall(force); }, 500); return; }
   var ios = isIOS(), can = !!deferred; if (!ios && !can && !force) return;
   var ipad = /ipad/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), steps = ios && !can;
   var d = document.createElement("div"); d.className = "instshade"; d.id = "inst"; d.setAttribute("role", "dialog"); d.setAttribute("aria-modal", "true"); d.setAttribute("aria-label", "Install the app");
@@ -547,14 +547,14 @@ function showInstall(force) {
   document.body.appendChild(d);
 }
 function hideInstall() { var d = $("inst"); if (d) d.remove(); }
-window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferred = e; setTimeout(function () { showInstall(); }, 2500); });
+window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferred = e; showInstall(); });
 window.addEventListener("appinstalled", function () { hideInstall(); deferred = null; toast("Installed. Look for Family Kitchen on your home screen."); });
 document.addEventListener("click", function (e) { var el = e.target.closest("[data-act]"); if (!el) return; var a = el.getAttribute("data-act");
   if (a === "doinstall" && deferred) { deferred.prompt(); deferred.userChoice.then(function () { deferred = null; hideInstall(); }); }
   else if (a === "noinstall") { ls("pfk_inst", String(Date.now())); hideInstall(); }
   else if (a === "showinstall") { ls("pfk_inst", "0"); if (deferred || isIOS()) showInstall(true); else sheet('<h3 id="shT">Install the app</h3><p class="sub">On Android Chrome: tap the three dots, then Install app (or Add to Home screen). On iPhone Safari: tap Share, then Add to Home Screen.</p><button class="big" data-act="close">Close</button>'); } });
 if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
-if (isIOS()) setTimeout(function () { showInstall(); }, 3500);
+if (isIOS()) setTimeout(function () { showInstall(); }, 0);
 
 /* ---------- boot ---------- */
 function boot() {
