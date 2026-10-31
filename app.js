@@ -2,13 +2,13 @@
 (function () {
 "use strict";
 var CFG = window.PFK_CONFIG || {};
-var stores = ["Stop & Shop", "Instacart", "Costco", "Target"];
-var cartUrl = {"Stop & Shop": "https://stopandshop.com/cart", "Instacart": "https://www.instacart.com/", "Costco": "https://www.costco.com/CheckoutCartDisplayView", "Target": "https://www.target.com/cart"};
+var stores = ["Stop & Shop", "Instacart", "Target"];
+var cartUrl = {"Stop & Shop": "https://stopandshop.com/cart", "Instacart": "https://www.instacart.com/", "Target": "https://www.target.com/cart"};
 var order = ["list", "cart", "ordered"], lab = {list: "On list", cart: "In cart", ordered: "Ordered by you"};
 var banners = {"Fridge": "img/fridge.jpg", "Pantry": "img/pantry.jpg", "Freezer": "img/freezer.jpg"};
 var TABS = ["list", "catalog", "pantry", "recipes", "votes", "members", "settings"];
 var D = {list: [], catalog: [], pantry: [], recipes: [], votes: [], members: [], settings: []};
-var st = {chat: [], pushOpen: false, voteOpen: false, shopView: "needs", pushKey: undefined, tab: "home", store: "Stop & Shop", typing: false, loaded: false, gate: false, err: "", lastSync: 0};
+var st = {chat: [], chatLoaded: false, toolOpen: "", pushOpen: false, voteOpen: false, shopView: "needs", pushKey: undefined, tab: "home", store: "Stop & Shop", typing: false, loaded: false, gate: false, err: "", lastSync: 0};
 var me = {name: ls("pfk_name") || "", pin: ls("pfk_pin") || ""};
 
 var P={home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',cart:'<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h3l2.4 11.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.7L20.5 8H6.2"/>',cook:'<path d="M5 10h14v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 10h18M9 6.5c0-1.6 1-1.6 1-3.2M14 6.5c0-1.6 1-1.6 1-3.2"/>',pantry:'<rect x="6.5" y="3" width="11" height="3" rx="1"/><path d="M7.5 6v14a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V6M7.5 11h9"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 1 2-2h13v3H6a2 2 0 0 1-2-1zM9 7h6"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',send:'<path d="M4 12L20 4l-6 16-3-7z"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'};
@@ -21,8 +21,8 @@ function rid() { var s = ""; while (s.length < 12) s += Math.random().toString(3
 function today() { var d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
 function byId(arr, id) { for (var i = 0; i < arr.length; i++) if (String(arr[i].id) === String(id)) return arr[i]; return null; }
 function toast(m) { var t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 4200); }
-function sheet(h, gate) { st.gate = !!gate; if (!/Push to Stop/.test(h)) st.pushOpen = false; if (!/Dinner vote/.test(h)) st.voteOpen = false; $("sheetBody").innerHTML = h; $("sheet").hidden = false; }
-function closeSheet(force) { if (st.gate && !force) return; st.gate = false; st.pushOpen = false; st.voteOpen = false; $("sheet").hidden = true; }
+function sheet(h, gate) { st.gate = !!gate; if (!/Push to Stop/.test(h)) st.pushOpen = false; if (!/Dinner vote/.test(h)) st.voteOpen = false; if (!/id="toolT"/.test(h)) st.toolOpen = ""; $("sheetBody").innerHTML = h; $("sheet").hidden = false; }
+function closeSheet(force) { if (st.gate && !force) return; st.gate = false; st.pushOpen = false; st.toolOpen = ""; st.voteOpen = false; $("sheet").hidden = true; }
 function safeParse(s, d) { try { var v = JSON.parse(s); return v == null ? d : v; } catch (e) { return d; } }
 function kwList(c) { return String(c.kw || "").split("|").map(function (x) { return x.trim().toLowerCase(); }).filter(Boolean); }
 
@@ -69,7 +69,7 @@ function applyAll(data) {
   TABS.forEach(function (t) { D[t] = (data[t] || []).slice(); });
   D.recipes.forEach(function (r) { r.ings = Array.isArray(r.ings) ? r.ings : safeParse(r.ings, []); });
   st.loaded = true; st.lastSync = Date.now(); st.err = ""; checkPushDone();
-  if (j !== lastJSON) { lastJSON = j; render(); if (st.pushOpen && !$("sheet").hidden) $("sheetBody").innerHTML = pushHtml(); } else setStatus();
+  if (j !== lastJSON) { lastJSON = j; render(); if (st.pushOpen && !$("sheet").hidden) $("sheetBody").innerHTML = pushHtml(); else if (st.toolOpen && !$("sheet").hidden) $("sheetBody").innerHTML = toolHtml(st.toolOpen); } else setStatus();
 }
 function poll() {
   if (!CFG.api || !me.pin || pending || polling) return Promise.resolve();
@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v8";
+var BUILD = "v9";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -198,8 +198,8 @@ function storeSeg() { return '<div class="seg" role="group" aria-label="Store">'
 function rc(r) { return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + recImg(r) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + "</div></button>"; }
 function dealsHtml(max) {
   var ds = dealsList().slice(0, max); if (!ds.length) return "";
-  return '<div class="card"><h3>On sale from your usual items</h3><p class="sub" style="margin:6px 0 4px">Seen on Stop &amp; Shop ' + esc(ds[0].seen || "") + ". You decide what goes on the list.</p>" +
-    ds.map(function (d, i) { return '<div class="deal"><div class="grow"><b>' + esc(d.name) + '</b><div class="sub"><span style="color:var(--ok);font-weight:700">$' + esc(d.sale) + '</span> <span class="was">$' + esc(d.was) + "</span>" + (d.note ? " &middot; " + esc(d.note) : "") + '</div></div><button class="btn sm" data-act="adddeal" data-id="' + i + '">+ List</button></div>'; }).join("") + "</div>";
+  return '<div class="card"><h3>On sale from your usual items</h3><p class="sub" style="margin:6px 0 4px">Seen on Stop &amp; Shop ' + esc(ds[0].seen || "") + ". Tap Add and it waits in your cart queue.</p>" +
+    ds.map(function (d, i) { return '<div class="deal"><div class="grow"><b>' + esc(d.name) + '</b><div class="sub"><span style="color:var(--ok);font-weight:700">$' + esc(d.sale) + '</span> <span class="was">$' + esc(d.was) + "</span>" + (d.note ? " &middot; " + esc(d.note) : "") + '</div></div><button class="btn sm" data-act="adddeal" data-id="' + i + '">Add</button></div>'; }).join("") + "</div>";
 }
 function meals() { var d = byId(D.settings, "meallog"); return d ? safeParse(d.value, {}) : {}; }
 function ago(ymd) { if (!ymd) return "not logged yet"; var s = String(ymd), d = new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)), n = Math.round((new Date(new Date().toDateString()) - d) / 864e5); return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 14 ? n + " days ago" : n < 60 ? Math.round(n / 7) + " weeks ago" : Math.round(n / 30) + " months ago"; }
@@ -222,19 +222,20 @@ function voteCard() {
 function pushInfo() {
   var rq = byId(D.settings, "pushreq"), pu = byId(D.settings, "push"), req = rq ? String(rq.value || "").split("|") : [], ms = Number(req[0]) || 0;
   var n = queuedFor("Stop & Shop").length, c = cartFor("Stop & Shop").length;
-  var o = {n: n, c: c, s: "idle", t: "", k: ms};
+  var o = {n: n, c: c, s: "idle", t: "", k: ms, mode: req[1] || "go", tool: "idle"};
   if (ms && Date.now() - ms < 12 * 36e5) {
     var p = pu ? String(pu.value || "").split("|") : [];
     if (p[1] && Number(p[1]) === ms) { o.s = p[0] === "done" ? "done" : p[0] === "working" ? "working" : "bad"; o.t = p.slice(2).join("|"); }
     else o.s = (Date.now() - ms > 90 * 6e4) ? "late" : "sent";
   }
+  if (o.mode === "times" || o.mode === "sales") { o.tool = o.s; o.s = "idle"; }
   return o;
 }
 function subtotalOf(t) { var m = /subtotal[^$]*\$([\d,]+\.\d\d)/i.exec(t || ""); return m ? m[1] : ""; }
 function pushHtml() {
   var o = pushInfo(), d = '<span class="dots">...</span>', b, cls = "", dis = false, m, w = o.n + " item" + (o.n === 1 ? "" : "s");
   if (o.s === "idle") { if (o.n) { b = "Push " + w + " to cart"; m = "<b>" + w + "</b> waiting. " + o.c + " already in the cart."; } else { b = "Nothing waiting"; dis = true; m = "Move items from Needs to the cart first. " + o.c + " already in the cart."; } }
-  else if (o.s === "sent") { b = "Sent"; dis = true; m = "Waiting for the kitchen PC to pick it up" + d + " It checks about once an hour, or right away when Ifoma says &ldquo;push&rdquo; in Claude."; }
+  else if (o.s === "sent") { b = "Sent"; dis = true; m = "Waiting for the kitchen PC to pick it up" + d + " It checks a few times a day (8, 12, 4 and 7), or right away when Ifoma says &ldquo;push&rdquo; in Claude."; }
   else if (o.s === "late") { b = o.n ? "Still waiting" : "Sent"; cls = "bad"; m = "The kitchen PC has not picked it up yet. Tap to send again, or ask Ifoma to say &ldquo;push&rdquo; in Claude for an instant fill."; if (!o.n) dis = true; }
   else if (o.s === "working") { b = "Filling your cart"; dis = true; m = "The kitchen PC is adding items now" + d + " You can close the app."; }
   else if (o.s === "done") { b = o.n ? "Push " + w + " to cart" : "Cart updated"; cls = o.n ? "" : "done"; dis = !o.n; m = "<b>" + esc(o.t || "Cart filled.") + "</b>" + (/pickup/i.test(o.t || "") ? "" : " Ifoma: pick a pickup time and place the order."); }
@@ -244,6 +245,24 @@ function pushHtml() {
 function pushBar() {
   var o = pushInfo(), sub = o.s === "done" && !o.n ? "Cart updated. Open it to review." : o.s === "sent" || o.s === "working" ? "On its way" : o.n ? o.n + " waiting to push" : "Cart is up to date";
   return '<button class="pushbar" data-act="push"><span class="ic">' + ic("cart", "") + '</span><span><b>Push to Stop &amp; Shop</b><small>' + sub + '</small></span><span class="go">Push</span></button>';
+}
+function toolBtns() {
+  if (st.store !== "Stop & Shop") return "";
+  return '<div class="tools"><button class="tool" data-act="tool" data-v="times"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><b>Check times</b><small>Pickup and delivery</small></span></button><button class="tool" data-act="tool" data-v="sales"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg><span><b>Check sales</b><small>On your usual items</small></span></button></div>';
+}
+function toolHtml(mode) {
+  var o = pushInfo(), s = o.mode === mode ? o.tool : "idle", times = mode === "times", d = '<span class="dots">...</span>', h = '<h3 id="toolT">' + (times ? "Pickup and delivery times" : "Sales on your usual items") + "</h3>", t = esc(o.t || "").replace(/\. /g, ".<br>");
+  if (s === "idle") h += '<p class="sub">Ask the kitchen PC to look at Stop &amp; Shop. It only reads. It never picks a time or buys anything.</p><button class="pgo" data-act="tool" data-v="' + mode + '">Check now</button>';
+  else if (s === "sent") h += '<div class="pmsg">Request sent. Waiting for the kitchen PC' + d + ' It checks a few times a day (8, 12, 4 and 7), or right away when Ifoma says &ldquo;push&rdquo; in Claude.</div>';
+  else if (s === "working") h += '<div class="pmsg">The kitchen PC is looking now' + d + " You can close the app and come back.</div>";
+  else if (s === "done") h += '<div class="toolout">' + (t || "Done.") + '</div><button class="pgo done" data-act="tool" data-v="' + mode + '">Check again</button>';
+  else if (s === "late") h += '<div class="pmsg">The kitchen PC has not picked it up yet. Ask Ifoma to say &ldquo;push&rdquo; in Claude for an instant answer.</div><button class="pgo bad" data-act="tool" data-v="' + mode + '">Send again</button>';
+  else h += '<div class="pmsg">' + (t || "Something went wrong.") + '</div><button class="pgo bad" data-act="tool" data-v="' + mode + '">Try again</button>';
+  return h + '<div class="pnever">Read only. Ifoma picks the time and places every order.</div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>';
+}
+function toolSheet(mode, send) {
+  if (send) put("settings", "pushreq", {value: Date.now() + "|" + mode});
+  st.toolOpen = mode; sheet(toolHtml(mode)); st.toolOpen = mode;
 }
 var alertTimer = 0;
 function showAlert(t) {
@@ -276,30 +295,60 @@ function liaAnswer(q) {
   return "Here is what I would cook, based on what you have and what has not been made in a while:" + t.map(miniRec).join("");
 }
 function cook() {
+  liaLoad();
   var h = '<div class="lhero"><div class="lia"><img class="a" src="img/lia/lia.png" alt="Lia, your cooking buddy"><img class="b" src="img/lia/lia-b.png" alt=""></div><div class="say">Hi' + (me.name ? " " + esc(me.name) : "") + ', I&rsquo;m Lia. Hungry?<small>Ask me anything about dinner.</small></div></div><div class="chat">';
-  if (!st.chat.length) h += '<div class="aiRow">' + face() + '<div class="msg ai">Tap one to start.<div class="opts"><button class="opt fill" data-act="liaask" data-q="What can we cook tonight?">What can we cook tonight?</button><button class="opt" data-act="tab" data-v="recipes">Open Bangers</button></div></div></div>';
+  if (!st.chat.length) h += '<div class="aiRow">' + face() + '<div class="msg ai">Tap one to start, or tap the mic and talk.<div class="opts"><button class="opt fill" data-act="liaask" data-q="What can we cook tonight?">What can we cook tonight?</button><button class="opt" data-act="tool" data-v="sales">Check sales</button><button class="opt" data-act="tool" data-v="times">Check times</button><button class="opt" data-act="tab" data-v="recipes">Open Bangers</button></div></div></div>';
+  else h += '<div class="newchat"><button class="linkbtn" data-act="newchat">New chat</button></div>';
   st.chat.forEach(function (c) { h += c.who === "me" ? '<div class="msg me">' + esc(c.t) + "</div>" : '<div class="aiRow">' + face() + '<div class="msg ai">' + c.t + "</div></div>"; });
-  return h + '</div><div class="bar2"><input type="text" id="liain" placeholder="Ask Lia, or say: add butter" aria-label="Ask Lia" autocomplete="off" enterkeyhint="send"><button class="round" data-act="liasend" aria-label="Send">' + ic("send", "") + "</button></div>";
+  return h + '</div><div class="bar2"><input type="text" id="liain" placeholder="Ask Lia, or say: add butter" aria-label="Ask Lia" autocomplete="off" enterkeyhint="send"><button class="round mic3" data-act="liamic" aria-label="Talk to Lia">' + ic("mic", "") + '</button><button class="round send" data-act="liasend" aria-label="Send">' + ic("send", "") + "</button></div>";
 }
 var liaBusy = false;
+function liaKey() { return "lia_" + String(me.name || "family").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+function liaLoad() {
+  if (st.chatLoaded || !st.loaded || st.chat.length) return; st.chatLoaded = true;
+  var row = byId(D.settings, liaKey()); if (!row) return; var arr = safeParse(row.value, []), cut = Date.now() - 3 * 864e5;
+  st.chat = arr.filter(function (c) { return c && c.t && (!c.ts || c.ts > cut); }).map(function (c) { return c.who === "me" ? {who: "me", t: String(c.t)} : {who: "ai", t: esc(c.t), raw: String(c.t)}; });
+}
+function liaSave() {
+  var keep = st.chat.filter(function (c) { return !c.pending; }).slice(-24).map(function (c) { return {who: c.who, t: (c.who === "me" ? c.t : (c.raw || liaPlain(c.t))).slice(0, 700), ts: Date.now()}; });
+  put("settings", liaKey(), {value: JSON.stringify(keep).slice(-9000) === JSON.stringify(keep) ? JSON.stringify(keep) : JSON.stringify(keep.slice(-10))});
+}
+function liaFix(o) {
+  var r = String(o.reply || ""), k = r.indexOf("```"), j = null, out = {};
+  if (k > -1) { var body = r.slice(k).replace(/^```(?:json)?/, "").replace(/```[\s\S]*$/, ""); try { j = JSON.parse(body.trim()); } catch (e) {} r = r.slice(0, k).trim(); }
+  else if (/^\s*\{/.test(r)) { try { j = JSON.parse(r); } catch (e2) {} r = j && j.reply ? String(j.reply) : ""; }
+  Object.keys(o).forEach(function (f) { out[f] = o[f]; });
+  if (j) ["add", "cooked", "gear", "banger", "show", "tool"].forEach(function (f) { if (out[f] == null && j[f] != null) out[f] = j[f]; });
+  out.reply = r || "Here you go."; return out;
+}
 function liaPlain(h) { return String(h).replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&rsquo;/g, "'").replace(/\s+/g, " ").trim(); }
 function liaApply(o) {
   var done = [], html = esc(o.reply || "");
   (o.add || []).forEach(function (x) { var n = (x && x.name || "").trim(); if (n) { addByName(n, st.store, x.note || ""); done.push("Added " + n + " to " + st.store); } });
   (o.cooked || []).forEach(function (id) { var r = byId(D.recipes, id); if (r) { var ml = meals(); ml[id] = today(); put("settings", "meallog", {value: JSON.stringify(ml)}); done.push("Logged " + r.name + " as made today"); } });
+  if (o.tool === "times" || o.tool === "sales") { put("settings", "pushreq", {value: Date.now() + "|" + o.tool}); html += '<div class="opts"><button class="opt fill" data-act="toolshow" data-v="' + o.tool + '">Show answer</button></div>'; }
   if (o.gear) { var g = byId(D.settings, "gear"), v = (g ? String(g.value || "") + "\n" : "") + String(o.gear).slice(0, 300); put("settings", "gear", {value: v.slice(-4000)}); done.push("Remembered that"); }
   if (o.banger && o.banger.name) { put("recipes", null, {name: String(o.banger.name).slice(0, 80), img: "", serves: 8, ings: (o.banger.ings || []).slice(0, 40).map(function (i) { return {n: String(i.n || ""), q: String(i.q || "")}; }), note: String(o.banger.note || "").slice(0, 500), addedBy: me.name, kind: "banger"}); done.push("Saved " + o.banger.name + " to Bangers"); }
   (o.show || []).slice(0, 3).forEach(function (id) { var r = byId(D.recipes, id); if (r) { var ig = recipeIngs(r), need = ig.filter(function (x) { return x.s === "need"; }).length; html += miniRec({r: r, has: ig.length > 0, need: need}); } });
   if (done.length) html += '<div class="made" style="margin-top:8px">' + done.map(esc).join(" &middot; ") + "</div>";
   return html;
 }
+function liaTool(q) {
+  var t = String(q || "").toLowerCase();
+  if (/\b(pick ?up|delivery|deliver)\b/.test(t) && /\b(time|times|slot|slots|available|open|today|tonight|tomorrow)\b/.test(t)) return "times";
+  if (/\b(sale|sales|deals?|on special)\b/.test(t) && /\b(check|any|what|find|look|show|are)\b/.test(t)) return "sales";
+  return "";
+}
 function liaSay(q) {
-  if (liaBusy) return; st.chat.push({who: "me", t: q}); liaBusy = true; st.chat.push({who: "ai", t: '<span class="dots">...</span>', pending: true}); render(); scrollDown();
-  var hist = st.chat.filter(function (c) { return !c.pending; }).map(function (c) { return {role: c.who === "me" ? "user" : "assistant", content: c.who === "me" ? c.t : (c.raw || liaPlain(c.t))}; });
+  if (liaBusy) return;
+  var tl = liaTool(q);
+  if (tl) { st.chat.push({who: "me", t: q}); put("settings", "pushreq", {value: Date.now() + "|" + tl}); var msg = tl === "times" ? "I cannot see the store myself, so I asked the kitchen PC to check Stop &amp; Shop pickup and delivery times. It only looks and never picks one." : "I asked the kitchen PC to look through Stop &amp; Shop for sales on your usual items."; st.chat.push({who: "ai", t: msg + '<div class="opts"><button class="opt fill" data-act="toolshow" data-v="' + tl + '">Show answer</button></div>', raw: liaPlain(msg)}); liaSave(); render(); scrollDown(); return; }
+  st.chat.push({who: "me", t: q}); liaBusy = true; st.chat.push({who: "ai", t: '<span class="dots">...</span>', pending: true}); render(); scrollDown();
+  var hist = st.chat.filter(function (c) { return !c.pending; }).slice(-12).map(function (c) { return {role: c.who === "me" ? "user" : "assistant", content: c.who === "me" ? c.t : (c.raw || liaPlain(c.t))}; });
   call({action: "lia", who: me.name, messages: hist}).then(function (r) {
     if (!r.ok) throw new Error(r.error || "lia_failed");
     return r.out;
-  }).then(function (o) { st.chat.pop(); st.chat.push({who: "ai", t: liaApply(o), raw: o.reply || ""}); }, function (e) {
+  }).then(function (o) { o = liaFix(o); st.chat.pop(); st.chat.push({who: "ai", t: liaApply(o), raw: o.reply || ""}); liaSave(); }, function (e) {
     st.chat.pop(); var msg = e.message === "no_key" ? "" : e.message === "daily_limit" ? "I have hit my chat limit for today, but here is what I can tell from your lists." : "I could not reach my brain just now, but here is what I can tell from your lists.";
     st.chat.push({who: "ai", t: (msg ? esc(msg) + "<br>" : "") + liaAnswer(q), raw: ""}); }).then(function () { liaBusy = false; render(); scrollDown(); });
 }
@@ -327,13 +376,13 @@ function shop() {
   var ss = st.store === "Stop & Shop", nd = needsFor(st.store), qd = queuedFor(st.store), cd = cartFor(st.store), od = orderedFor(st.store), v = st.shopView === "cart" ? "cart" : "needs";
   var seg = '<div class="seg2" role="group"><button data-act="shopview" data-v="needs" aria-pressed="' + (v === "needs") + '">Needs<b>' + nd.length + '</b></button><button data-act="shopview" data-v="cart" aria-pressed="' + (v === "cart") + '">Cart<b>' + (qd.length + cd.length) + "</b></button></div>";
   if (v === "needs") {
-    return pageTop("Shop", "Needs list &middot; " + esc(st.store)) + seg + storeSeg() +
+    return pageTop("Shop", "Needs list &middot; " + esc(st.store)) + seg + storeSeg() + toolBtns() +
       '<div class="card"><b>Add to Needs</b><div class="sub">Start typing and your usual items appear.</div><div class="ask" style="margin-top:8px"><div class="grow"><input type="text" id="ask2" placeholder="e.g. syrup" aria-label="Item" autocomplete="off" enterkeyhint="send"></div><button class="btn" data-act="send2">Add</button></div><div class="sugg" id="sugg2"></div></div>' +
       '<div class="card"><div class="row"><h3 class="grow">Needs</h3><span class="sub">Holding list</span></div>' + (nd.length ? nd.map(needRow).join("") + '<button class="big" data-act="addall">Add all to cart (' + nd.length + ")</button>" : '<p class="empty">Nothing waiting. Add something above.</p>') + "</div>" +
       dealsHtml(6) + '<p class="sub">Moving an item to the cart does not buy anything. It waits there until someone taps Push.</p>';
   }
   var o = pushInfo(), sub = subtotalOf(o.t);
-  return pageTop("Shop", "Cart &middot; " + esc(st.store)) + seg + storeSeg() +
+  return pageTop("Shop", "Cart &middot; " + esc(st.store)) + seg + storeSeg() + toolBtns() +
     '<div class="card"><div class="row"><h3 class="grow">' + (ss ? "Your Stop &amp; Shop cart" : "Your " + esc(st.store) + " list") + "</h3>" + (ss && o.s === "done" ? '<span class="chip ok">Updated</span>' : "") + "</div>" +
     (qd.length ? '<div class="sechead"><h4>Waiting to push</h4><span class="sub">' + qd.length + " item" + (qd.length === 1 ? "" : "s") + "</span></div>" + qd.map(function (i) { return cartRow(i, true); }).join("") : "") +
     '<div class="sechead"><h4>In the cart now</h4><span class="sub">' + cd.length + " item" + (cd.length === 1 ? "" : "s") + "</span></div>" + (cd.length ? cd.map(function (i) { return cartRow(i, false); }).join("") : '<p class="empty">Nothing in the cart yet.</p>') +
@@ -349,13 +398,13 @@ function nameSheet(id) {
   sheet('<h3 id="shT">Name a product once</h3><p class="sub">What should the cart get for <b>' + esc(i.name) + '</b>? Type the brand and size. The app remembers it, so next time it goes straight through.</p><input type="text" id="prodIn" placeholder="e.g. Goya Long Grain Rice 5 lb" autocomplete="off" aria-label="Product"><button class="big" data-act="namesave" data-id="' + esc(id) + '">Save and move to cart</button><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Cancel</button>');
   setTimeout(function () { var p = $("prodIn"); if (p) p.focus(); }, 60);
 }
-function startMic() {
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, q = $("ask");
+function startMic(target, after) {
+  target = target || "ask"; var SR = window.SpeechRecognition || window.webkitSpeechRecognition, q = $(target);
   if (!SR) { if (q) q.focus(); toast("Tap the microphone on your keyboard to talk."); return; }
   try {
     var r = new SR(); r.lang = "en-US"; r.interimResults = false;
-    r.onresult = function (e) { var t = e.results[0][0].transcript; var q2 = $("ask"); if (q2) { q2.value = t; showSugg("ask", t); toggleAdd(); } };
-    r.onerror = function () { toast("Could not hear that. Tap the mic on your keyboard instead."); var q3 = $("ask"); if (q3) q3.focus(); };
+    r.onresult = function (e) { var t = e.results[0][0].transcript; var q2 = $(target); if (q2) { q2.value = t; if (after !== null) { showSugg("ask", t); toggleAdd(); } else q2.focus(); } };
+    r.onerror = function () { toast("Could not hear that. Tap the mic on your keyboard instead."); var q3 = $(target); if (q3) q3.focus(); };
     r.start(); toast("Listening...");
   } catch (x) { if (q) q.focus(); toast("Tap the microphone on your keyboard to talk."); }
 }
@@ -389,13 +438,13 @@ function recipeSheet(id) {
 var views = {home: home, shop: shop, cook: cook, pantry: pan, recipes: rec};
 var tabs = [["home", "Home", "home"], ["shop", "Shop", "cart"], ["cook", "Cook", "cook"], ["pantry", "Pantry", "pantry"], ["recipes", "Bangers", "book"]];
 function render() {
-  var a = document.activeElement, keep = a && a.id && /^(ask2?|liain)$/.test(a.id) ? {id: a.id, v: a.value} : null;
+  var a = document.activeElement, keep = a && a.id && /^(ask2?|liain)$/.test(a.id) ? {id: a.id, v: a.value} : null, lk = $("liain"); if (!keep && lk && lk.value) keep = {id: "liain", v: lk.value, nf: 1};
   $("view").innerHTML = views[st.tab]();
   var qn = queuedFor("Stop & Shop").length;
   $("tabs").innerHTML = tabs.map(function (t) { return '<button class="tab" role="tab" style="position:relative" aria-selected="' + (st.tab === t[0]) + '" data-act="tab" data-v="' + t[0] + '">' + (t[0] === "shop" && qn ? '<span class="tbadge">' + qn + "</span>" : "") + ic(t[2]) + t[1] + "</button>"; }).join("");
   $("snap").hidden = !(st.tab === "pantry" || st.tab === "recipes");
   setStatus();
-  if (keep) { var el = $(keep.id); if (el) { el.value = keep.v; el.focus(); if (keep.id !== "liain") showSugg(keep.id, keep.v); } }
+  if (keep) { var el = $(keep.id); if (el) { el.value = keep.v; if (!keep.nf) el.focus(); if (keep.id !== "liain") showSugg(keep.id, keep.v); } }
   toggleAdd();
 }
 
@@ -420,7 +469,7 @@ document.addEventListener("click", function (e) {
   else if (a === "send" || a === "send2") { var inp = $(a === "send" ? "ask" : "ask2"), v = inp ? inp.value.trim() : ""; if (!v) { toast("Type or dictate a request first."); return; }
     var p = a === "send" ? parseAdd(v) : {items: [v], store: st.store}; p.items.forEach(function (n) { addByName(n, p.store); }); st.store = p.store; inp.value = ""; render(); toast("Added " + p.items.join(", ") + " to " + p.store + "."); }
   else if (a === "pickcat") { var c = byId(D.catalog, id), inEl = $(el.getAttribute("data-in")), store = st.store; if (c) { if (el.getAttribute("data-in") === "ask" && inEl) store = parseAdd(inEl.value).store; addFromCatalog(c, store); st.store = store; if (inEl) inEl.value = ""; render(); toast("Added " + (c.brand || c.name) + " to " + store + "."); } }
-  else if (a === "adddeal") { var d = dealsList()[Number(id)]; if (d) { addLine({name: d.name, size: d.size || "", cat: d.cat || guessCat(d.name), store: "Stop & Shop", qty: 1, status: "list", note: "On sale $" + d.sale, addedBy: me.name}); toast("Added to your list."); } }
+  else if (a === "adddeal") { var dl = dealsList(), d = dl[Number(id)]; if (d) { addLine({name: d.name, size: d.size || "", cat: d.cat || guessCat(d.name), store: "Stop & Shop", qty: 1, status: "queued", note: "On sale $" + d.sale, addedBy: me.name}); dl.splice(Number(id), 1); put("settings", "deals", {value: JSON.stringify(dl)}); toast("Queued. It goes into your Stop & Shop cart at the next push."); } }
   else if (a === "recipe") { sheet(recipeSheet(id)); }
   else if (a === "addneed") { var r = byId(D.recipes, id); if (r) { var need = recipeIngs(r).filter(function (x) { return x.s === "need"; }); need.forEach(function (x) { addByName(x.n, st.store, "For " + r.name + " (" + x.q + ")"); }); closeSheet(); toast("Added " + need.length + " items to your " + st.store + " list."); } }
   else if (a === "pcycle") { var pp = byId(D.pantry, id), nx2 = {unconfirmed: "ok", ok: "low", low: "out", out: "ok"}; if (pp) put("pantry", id, {status: nx2[pp.status] || "ok"}); }
@@ -453,8 +502,12 @@ document.addEventListener("click", function (e) {
     put("list", id, {name: pv2, status: i.store === "Stop & Shop" ? "queued" : "cart", note: "Product named once"}); closeSheet(); toast("Saved. " + pv2 + " is waiting to push."); }
   else if (a === "iplaced") { var cnt = cartFor(st.store).length; sheet('<h3 id="shT">Mark as ordered?</h3><p class="sub">Only do this after you place the order on the store site. The ' + cnt + ' item' + (cnt === 1 ? "" : "s") + ' in the cart move to Ordered by you, and the pantry updates.</p><button class="big" data-act="iplacedyes">Yes, I placed the order</button><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Not yet</button>'); }
   else if (a === "iplacedyes") { cartFor(st.store).forEach(function (x) { put("list", x.id, {status: "ordered"}); recordPurchase(x); }); closeSheet(); toast("Marked as ordered."); }
-  else if (a === "mic") { startMic(); }
+  else if (a === "mic") { startMic("ask"); }
   else if (a === "votes") { st.voteOpen = true; sheet(voteCard() + '<button class="big alt" data-act="close">Close</button>'); st.voteOpen = true; }
+  else if (a === "tool") { toolSheet(el.getAttribute("data-v"), true); }
+  else if (a === "toolshow") { toolSheet(el.getAttribute("data-v"), false); }
+  else if (a === "liamic") { startMic("liain", null); }
+  else if (a === "newchat") { st.chat = []; liaSave(); render(); }
   else if (a === "hidealert") { $("alertbox").innerHTML = ""; }
   else if (a === "close") { closeSheet(); }
 });
