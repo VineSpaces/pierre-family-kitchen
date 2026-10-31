@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v12";
+var BUILD = "v13";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -199,7 +199,7 @@ function rc(r) { return '<button class="rcard" data-act="recipe" data-id="' + es
 function dealsHtml(max) {
   var ds = dealsList().slice(0, max); if (!ds.length) return "";
   return '<div class="card"><h3>On sale from your usual items</h3><p class="sub" style="margin:6px 0 4px">Seen on Stop &amp; Shop ' + esc(ds[0].seen || "") + ". Tap Add and it waits in your cart queue.</p>" +
-    ds.map(function (d, i) { return '<div class="deal"><div class="grow"><b>' + esc(d.name) + '</b><div class="sub"><span style="color:var(--ok);font-weight:700">$' + esc(d.sale) + '</span> <span class="was">$' + esc(d.was) + "</span>" + (d.note ? " &middot; " + esc(d.note) : "") + '</div></div><button class="btn sm" data-act="adddeal" data-id="' + i + '">Add</button></div>'; }).join("") + "</div>";
+    ds.map(function (d, i) { return '<div class="deal"><div class="grow"><b>' + esc(d.name) + '</b><div class="sub"><span style="color:var(--ok);font-weight:700">$' + esc(d.sale) + '</span> <span class="was">$' + esc(d.was) + "</span>" + (d.note ? " &middot; " + esc(d.note) : "") + '</div></div><button class="btn sm" data-act="adddeal" data-id="' + i + '">Add</button><button class="dealx" data-act="dismissdeal" data-id="' + i + '" aria-label="Not interested in ' + esc(d.name) + '">' + ic("x", "") + '</button></div>'; }).join("") + "</div>";
 }
 function meals() { var d = byId(D.settings, "meallog"); return d ? safeParse(d.value, {}) : {}; }
 function ago(ymd) { if (!ymd) return "not logged yet"; var s = String(ymd), d = new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)), n = Math.round((new Date(new Date().toDateString()) - d) / 864e5); return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 14 ? n + " days ago" : n < 60 ? Math.round(n / 7) + " weeks ago" : Math.round(n / 30) + " months ago"; }
@@ -504,6 +504,7 @@ document.addEventListener("click", function (e) {
   else if (a === "iplacedyes") { cartFor(st.store).forEach(function (x) { put("list", x.id, {status: "ordered"}); recordPurchase(x); }); closeSheet(); toast("Marked as ordered."); }
   else if (a === "mic") { startMic("ask"); }
   else if (a === "votes") { st.voteOpen = true; sheet(voteCard() + '<button class="big alt" data-act="close">Close</button>'); st.voteOpen = true; }
+  else if (a === "dismissdeal") { var dl2 = dealsList(), d2 = dl2[Number(id)]; if (d2) { dl2.splice(Number(id), 1); put("settings", "deals", {value: JSON.stringify(dl2)}); var no = byId(D.settings, "dealsno"), nl = no ? safeParse(no.value, []) : [], cut2 = Date.now() - 21 * 864e5; nl = nl.filter(function (x) { return x && x.t > cut2; }); nl.push({n: d2.name, t: Date.now()}); put("settings", "dealsno", {value: JSON.stringify(nl.slice(-80))}); toast("Removed. I will not show that one again for a few weeks."); } }
   else if (a === "tool") { toolSheet(el.getAttribute("data-v"), true); }
   else if (a === "toolshow") { toolSheet(el.getAttribute("data-v"), false); }
   else if (a === "liamic") { startMic("liain", null); }
