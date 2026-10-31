@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v11";
+var BUILD = "v12";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -556,13 +556,36 @@ document.addEventListener("click", function (e) { var el = e.target.closest("[da
 if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
 if (isIOS()) setTimeout(function () { showInstall(); }, 0);
 
+/* ---------- new version notice ---------- */
+var lastUpd = 0;
+function showUpdate() {
+  if ($("updbar")) return;
+  var d = document.createElement("div"); d.className = "updbar"; d.id = "updbar"; d.setAttribute("role", "status");
+  d.innerHTML = '<span class="grow"><b>New version ready</b><small>Tap Refresh to get the latest.</small></span><button class="updgo" data-act="doupdate">Refresh</button>';
+  document.body.appendChild(d);
+}
+function checkUpdate() {
+  if (st.upd || Date.now() - lastUpd < 60000) return; lastUpd = Date.now();
+  fetch("app.js?c=" + Date.now(), {cache: "no-store"}).then(function (r) { return r.text(); }).then(function (t) {
+    var m = /var BUILD = "(v\d+)"/.exec(t); if (m && m[1] !== BUILD) { st.upd = m[1]; showUpdate(); }
+  }).catch(function () {});
+}
+document.addEventListener("click", function (e) { var el = e.target.closest("[data-act]"); if (!el || el.getAttribute("data-act") !== "doupdate") return;
+  el.textContent = "Updating..."; el.disabled = true;
+  Promise.all(["./", "index.html", "app.js", "sw.js", "manifest.webmanifest"].map(function (u) { return fetch(u, {cache: "reload"}).catch(function () {}); }))
+    .then(function () { return navigator.serviceWorker && navigator.serviceWorker.getRegistration ? navigator.serviceWorker.getRegistration() : null; })
+    .then(function (reg) { return reg && reg.update ? reg.update().catch(function () {}) : null; })
+    .then(function () { location.reload(); }, function () { location.reload(); });
+});
+
 /* ---------- boot ---------- */
 function boot() {
   render();
   if (!CFG.api) { $("status").textContent = "Not connected yet. Add the Apps Script address to config.js."; return; }
   if (!me.pin) showPin(); else poll();
   setInterval(function () { if (!document.hidden) poll(); }, 8000);
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { poll(); checkUpdate(); } });
+  setTimeout(checkUpdate, 15000); setInterval(function () { if (!document.hidden) checkUpdate(); }, 300000);
 }
 window.__pfk = {D: D, st: st, put: put, poll: poll};
 boot();
