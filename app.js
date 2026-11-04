@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v13";
+var BUILD = "v14";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -235,7 +235,7 @@ function subtotalOf(t) { var m = /subtotal[^$]*\$([\d,]+\.\d\d)/i.exec(t || "");
 function pushHtml() {
   var o = pushInfo(), d = '<span class="dots">...</span>', b, cls = "", dis = false, m, w = o.n + " item" + (o.n === 1 ? "" : "s");
   if (o.s === "idle") { if (o.n) { b = "Push " + w + " to cart"; m = "<b>" + w + "</b> waiting. " + o.c + " already in the cart."; } else { b = "Nothing waiting"; dis = true; m = "Move items from Needs to the cart first. " + o.c + " already in the cart."; } }
-  else if (o.s === "sent") { b = "Sent"; dis = true; m = "Waiting for the kitchen PC to pick it up" + d + " It checks a few times a day (8, 12, 4 and 7), or right away when Ifoma says &ldquo;push&rdquo; in Claude."; }
+  else if (o.s === "sent") { b = "Sent"; dis = true; m = "Waiting for the kitchen PC to pick it up" + d + " It checks every hour, or right away when Ifoma types &ldquo;push&rdquo; in the Push chat."; }
   else if (o.s === "late") { b = o.n ? "Still waiting" : "Sent"; cls = "bad"; m = "The kitchen PC has not picked it up yet. Tap to send again, or ask Ifoma to say &ldquo;push&rdquo; in Claude for an instant fill."; if (!o.n) dis = true; }
   else if (o.s === "working") { b = "Filling your cart"; dis = true; m = "The kitchen PC is adding items now" + d + " You can close the app."; }
   else if (o.s === "done") { b = o.n ? "Push " + w + " to cart" : "Cart updated"; cls = o.n ? "" : "done"; dis = !o.n; m = "<b>" + esc(o.t || "Cart filled.") + "</b>" + (/pickup/i.test(o.t || "") ? "" : " Ifoma: pick a pickup time and place the order."); }
@@ -246,34 +246,87 @@ function pushBar() {
   var o = pushInfo(), sub = o.s === "done" && !o.n ? "Cart updated. Open it to review." : o.s === "sent" || o.s === "working" ? "On its way" : o.n ? o.n + " waiting to push" : "Cart is up to date";
   return '<button class="pushbar" data-act="push"><span class="ic">' + ic("cart", "") + '</span><span><b>Push to Stop &amp; Shop</b><small>' + sub + '</small></span><span class="go">Push</span></button>';
 }
-function toolBtns() {
-  if (st.store !== "Stop & Shop") return "";
-  return '<div class="tools"><button class="tool" data-act="tool" data-v="times"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><b>Check times</b><small>Pickup and delivery</small></span></button><button class="tool" data-act="tool" data-v="sales"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg><span><b>Check sales</b><small>On your usual items</small></span></button></div>';
+function lastRes(mode) { var r = byId(D.settings, mode === "times" ? "lasttimes" : "lastsales"); return r ? safeParse(r.value, null) : null; }
+function whenT(ms) {
+  var d = new Date(ms), t = d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}), n = Math.round((new Date(new Date().toDateString()) - new Date(d.toDateString())) / 864e5);
+  return (n <= 0 ? "today" : n === 1 ? "yesterday" : d.toLocaleDateString([], {month: "short", day: "numeric"})) + " at " + t;
+}
+function saveLast(o) {
+  if (o.tool !== "done" || (o.mode !== "times" && o.mode !== "sales") || !o.k) return;
+  var l = lastRes(o.mode); if (l && l.k === o.k) return;
+  put("settings", o.mode === "times" ? "lasttimes" : "lastsales", {value: JSON.stringify({k: o.k, t: o.t})});
+}
+function toolSub(mode) {
+  var o = pushInfo(), l = lastRes(mode);
+  if (o.mode === mode && (o.tool === "sent" || o.tool === "working")) return "On its way";
+  if (mode === "sales") { var n = dealsList().length; if (l) return n + " on sale &middot; " + whenT(l.k); return n ? n + " on sale" : "Tap to check"; }
+  return l ? "Checked " + whenT(l.k) : "Tap to check";
+}
+function toolBtns(all) {
+  if (!all && st.store !== "Stop & Shop") return "";
+  return '<div class="tools"><button class="tool" data-act="toolshow" data-v="times"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><b>Pickup times</b><small>' + toolSub("times") + '</small></span></button><button class="tool" data-act="toolshow" data-v="sales"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg><span><b>Sales</b><small>' + toolSub("sales") + '</small></span></button></div>';
+}
+function timesRows(t) {
+  var segs = String(t || "").replace(/^\s*Pickup times:\s*/i, "").split(/;\s*|\.\s+/).map(function (x) { return x.trim().replace(/\.$/, ""); }).filter(function (x) { return x && !/^I did not pick/i.test(x); });
+  return segs.map(function (x) { var m = /^([^:]{2,40}):\s*(.+)$/.exec(x); return m ? '<div class="trow"><b>' + esc(m[1].charAt(0).toUpperCase() + m[1].slice(1)) + "</b>" + esc(m[2]) + "</div>" : '<div class="trow">' + esc(x) + "</div>"; }).join("");
 }
 function toolHtml(mode) {
-  var o = pushInfo(), s = o.mode === mode ? o.tool : "idle", times = mode === "times", d = '<span class="dots">...</span>', h = '<h3 id="toolT">' + (times ? "Pickup and delivery times" : "Sales on your usual items") + "</h3>", t = esc(o.t || "").replace(/\. /g, ".<br>");
-  if (s === "idle") h += '<p class="sub">Ask the kitchen PC to look at Stop &amp; Shop. It only reads. It never picks a time or buys anything.</p><button class="pgo" data-act="tool" data-v="' + mode + '">Check now</button>';
-  else if (s === "sent") h += '<div class="pmsg">Request sent. Waiting for the kitchen PC' + d + ' It checks a few times a day (8, 12, 4 and 7), or right away when Ifoma says &ldquo;push&rdquo; in Claude.</div>';
-  else if (s === "working") h += '<div class="pmsg">The kitchen PC is looking now' + d + " You can close the app and come back.</div>";
-  else if (s === "done") h += '<div class="toolout">' + (t || "Done.") + '</div><button class="pgo done" data-act="tool" data-v="' + mode + '">Check again</button>';
-  else if (s === "late") h += '<div class="pmsg">The kitchen PC has not picked it up yet. Ask Ifoma to say &ldquo;push&rdquo; in Claude for an instant answer.</div><button class="pgo bad" data-act="tool" data-v="' + mode + '">Send again</button>';
-  else h += '<div class="pmsg">' + (t || "Something went wrong.") + '</div><button class="pgo bad" data-act="tool" data-v="' + mode + '">Try again</button>';
+  var o = pushInfo(), s = o.mode === mode ? o.tool : "idle", times = mode === "times", d = '<span class="dots">...</span>', last = lastRes(mode);
+  if (s === "done") last = {k: o.k, t: o.t};
+  var h = '<h3 id="toolT">' + (times ? "Pickup times" : "Sales this week") + "</h3>";
+  if (s === "sent") h += '<div class="pmsg">Request sent. Waiting for the kitchen PC' + d + ' It checks every hour, or right away when Ifoma types &ldquo;push&rdquo; in the Push chat.</div>';
+  else if (s === "working") h += '<div class="pmsg">The kitchen PC is looking now' + d + " You can close the app. You will get an alert here when it is ready.</div>";
+  else if (s === "late") h += '<div class="pmsg">The kitchen PC has not picked it up yet. Ifoma can type &ldquo;push&rdquo; in the Push chat for an instant answer.</div>';
+  else if (s === "bad") h += '<div class="pmsg">' + esc(o.t || "Something went wrong.") + "</div>";
+  if (!last && !times && dealsList().length) h += dealsHtml(12);
+  if (last) {
+    h += '<div class="stamp">Last checked ' + whenT(last.k) + "</div>";
+    h += times ? '<div class="toolout">' + (timesRows(last.t) || "No times found.") + "</div>" : (dealsList().length ? dealsHtml(12) : '<div class="toolout">' + (esc(last.t) || "Nothing on sale right now.") + "</div>");
+  } else if (s === "idle" && (times || !dealsList().length)) h += '<p class="sub">Nothing checked yet. The kitchen PC only reads Stop &amp; Shop. It never picks a time or buys anything.</p>';
+  var busy = s === "sent" || s === "working";
+  h += '<button class="pgo ' + (s === "bad" || s === "late" ? "bad" : last ? "done" : "") + '" data-act="tool" data-v="' + mode + '"' + (busy ? " disabled" : "") + ">" + (busy ? "Checking" : last ? "Check again" : "Check now") + "</button>";
   return h + '<div class="pnever">Read only. Ifoma picks the time and places every order.</div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>';
 }
 function toolSheet(mode, send) {
+  var bx = $("alertbox"); if (bx) bx.innerHTML = "";
   if (send) put("settings", "pushreq", {value: Date.now() + "|" + mode});
   st.toolOpen = mode; sheet(toolHtml(mode)); st.toolOpen = mode;
 }
 var alertTimer = 0;
-function showAlert(t) {
-  var box = $("alertbox"); if (!box) return; var sub = subtotalOf(t);
-  box.innerHTML = '<button class="alert" data-act="hidealert">' + ic("check", "") + '<span><b>Your cart has been updated</b><small>' + (sub ? "Subtotal $" + esc(sub) + ". " : "") + 'Ifoma: pick a time and place the order.</small></span></button>';
-  clearTimeout(alertTimer); alertTimer = setTimeout(function () { box.innerHTML = ""; }, 9000);
+function showAlert(title, small, act, v, ms) {
+  var box = $("alertbox"); if (!box) return;
+  box.innerHTML = '<button class="alert" data-act="' + (act || "hidealert") + '"' + (v ? ' data-v="' + v + '"' : "") + ">" + ic("check", "") + "<span><b>" + esc(title) + "</b><small>" + esc(small) + "</small></span></button>";
+  clearTimeout(alertTimer); alertTimer = setTimeout(function () { box.innerHTML = ""; }, ms || 9000);
 }
 function checkPushDone() {
-  var o = pushInfo();
-  if (st.pushKey === undefined) { st.pushKey = o.s === "done" ? o.k : 0; return; }
-  if (o.s === "done" && o.k && o.k !== st.pushKey) { st.pushKey = o.k; showAlert(o.t); }
+  var o = pushInfo(); saveLast(o);
+  var done = o.s === "done" || o.tool === "done", seen = Number(ls("pfk_seen")) || 0;
+  if (!done || !o.k || o.k <= seen) return;
+  ls("pfk_seen", String(o.k));
+  if (st.toolOpen === o.mode && !$("sheet").hidden) return;
+  if (o.mode === "times") showAlert("Pickup times are ready", "Tap to see today and tomorrow.", "toolshow", "times", 15000);
+  else if (o.mode === "sales") { var n = dealsList().length; showAlert(n ? n + " sale" + (n === 1 ? "" : "s") + " on your usual items" : "No new sales this week", n ? "Tap to see them and add what you like." : "Nothing on sale from your usual items.", "toolshow", "sales", 15000); }
+  else { var sub = subtotalOf(o.t); showAlert("Your cart has been updated", (sub ? "Subtotal $" + sub + ". " : "") + "Ifoma: pick a time and place the order.", "hidealert", "", 12000); }
+}
+/* Lia: if what you moved to the cart has a better-priced sale match, say so (the item you asked for stays in the cart queue) */
+function swapCheck(i) {
+  if (!i || i.store !== "Stop & Shop") return;
+  var toks = String(i.name).toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(function (x) { return x.length > 3; }), key = toks.slice(0, 2).join(" "), dl = dealsList(), hit = -1;
+  dl.forEach(function (d, ix) { if (hit > -1 || String(d.name).toLowerCase() === String(i.name).toLowerCase()) return;
+    var nt = String(d.note || "").toLowerCase(), dn = String(d.name).toLowerCase(), shared = toks.filter(function (x) { return dn.indexOf(x) > -1; }).length;
+    if ((key && nt.indexOf(key) > -1) || (d.cat && i.cat && d.cat === i.cat && shared >= 2)) hit = ix; });
+  if (hit < 0) return;
+  var d = dl[hit]; st.swap = {id: i.id, deal: d.name};
+  var box = $("alertbox"); if (!box) return;
+  box.innerHTML = '<div class="alert swap" role="group"><span class="face sm"><img src="img/lia/f.png" alt=""></span><span><b>Lia: you like ' + esc(i.name) + ", but " + esc(d.name) + ' is on sale</b><small>$' + esc(d.sale) + (d.was ? " (was $" + esc(d.was) + ")" : "") + ". Want to switch?</small><span class=\"swbtns\"><button data-act=\"swapyes\">Switch</button><button data-act=\"swapno\">Keep mine</button></span></span></div>";
+  clearTimeout(alertTimer); alertTimer = setTimeout(function () { box.innerHTML = ""; }, 30000);
+}
+function swapDo(yes) {
+  var box = $("alertbox"); if (box) box.innerHTML = ""; var w = st.swap; st.swap = null; if (!w || !yes) return;
+  var i = byId(D.list, w.id), dl = dealsList(), ix = -1; dl.forEach(function (d, k) { if (d.name === w.deal) ix = k; });
+  if (!i || ix < 0) return; var d = dl[ix];
+  put("list", i.id, {name: d.name, size: d.size || "", cat: d.cat || i.cat, note: "Sale $" + d.sale + " (Lia suggestion)"});
+  dl.splice(ix, 1); put("settings", "deals", {value: JSON.stringify(dl)}); toast("Switched to " + d.name + ".");
 }
 /* ---------- Lia, the cooking buddy (runs on the family list, pantry and meal log; no account needed) ---------- */
 function face() { return '<div class="face"><img class="a" src="img/lia/f.png" alt=""><img class="b" src="img/lia/f-b.png" alt=""></div>'; }
@@ -367,7 +420,7 @@ function home() {
     '<div class="qa"><input type="text" id="ask" placeholder="Add to the Needs list" aria-label="Add to the Needs list" autocomplete="off" enterkeyhint="send"><button class="btn sm addb" data-act="send" hidden>Add</button><button class="mic2" data-act="mic" aria-label="Tap to talk">' + ic("mic", "") + '</button></div><div class="sugg" id="sugg"></div><div class="qahint">Type it, or tap the mic and say &ldquo;add bacon to Stop &amp; Shop&rdquo;</div>' +
     '<div class="counts"><button class="cnt" data-act="goshop" data-v="needs"><span class="n">' + n + '</span><span class="l">On the Needs list</span><span class="s">Waiting to be moved to the cart</span></button>' +
     '<button class="cnt c2" data-act="goshop" data-v="cart"><span class="n">' + c + '</span><span class="l">In the cart</span><span class="s">' + (w ? w + " waiting to push" : "All synced with Stop &amp; Shop") + "</span></button></div>" +
-    pushBar() +
+    pushBar() + toolBtns(true) +
     '<button class="sc" data-act="tab" data-v="cook" style="width:100%;margin-bottom:14px"><span class="face"><img src="img/lia/f.png" alt=""></span><span><b>Ask Lia</b><small>What can we cook tonight?</small></span></button>' +
     voteMini() + dealsHtml(3) +
     '<div class="homelinks"><button class="linkbtn" data-act="family">Usual brands and family preferences</button>' + (standalone() ? "" : '<button class="linkbtn" data-act="showinstall">Install this as an app on your phone</button>') + "</div>";
@@ -493,7 +546,7 @@ document.addEventListener("click", function (e) {
   else if (a === "newitem") { var ie = $(el.getAttribute("data-in")), iv = ie ? (el.getAttribute("data-in") === "ask" ? parseAdd(ie.value).items[0] : ie.value.trim()) : "", ist = el.getAttribute("data-in") === "ask" && ie ? parseAdd(ie.value).store : st.store; if (iv) { var nmN = iv.charAt(0).toUpperCase() + iv.slice(1); addLine({name: nmN, size: "", cat: guessCat(iv), store: ist, qty: 1, status: "list", note: "New item", addedBy: me.name}); st.store = ist; if (ie) ie.value = ""; render(); toast("Added " + nmN + " to " + ist + "."); } }
   else if (a === "shopview") { st.shopView = el.getAttribute("data-v"); render(); }
   else if (a === "goshop") { st.tab = "shop"; st.shopView = el.getAttribute("data-v"); window.scrollTo(0, 0); closeSheet(); render(); }
-  else if (a === "tocart") { i = byId(D.list, id); if (i) { var ssT = i.store === "Stop & Shop"; if (ssT && needsProduct(i)) nameSheet(id); else { put("list", id, {status: ssT ? "queued" : "cart"}); toast("Moved " + i.name + " to the cart."); } } }
+  else if (a === "tocart") { i = byId(D.list, id); if (i) { var ssT = i.store === "Stop & Shop"; if (ssT && needsProduct(i)) nameSheet(id); else { put("list", id, {status: ssT ? "queued" : "cart"}); toast("Moved " + i.name + " to the cart."); swapCheck(i); } } }
   else if (a === "toneeds") { put("list", id, {status: "list"}); }
   else if (a === "addall") { var moved = 0, held = 0; needsFor(st.store).forEach(function (x) { if (st.store === "Stop & Shop" && needsProduct(x)) held++; else { put("list", x.id, {status: st.store === "Stop & Shop" ? "queued" : "cart"}); moved++; } }); toast("Moved " + moved + " to the cart." + (held ? " " + held + " still need a product named first." : "")); }
   else if (a === "namep") { nameSheet(id); }
@@ -510,6 +563,8 @@ document.addEventListener("click", function (e) {
   else if (a === "liamic") { startMic("liain", null); }
   else if (a === "newchat") { st.chat = []; liaSave(); render(); }
   else if (a === "hidealert") { $("alertbox").innerHTML = ""; }
+  else if (a === "swapyes") { swapDo(true); }
+  else if (a === "swapno") { swapDo(false); }
   else if (a === "close") { closeSheet(); }
 });
 document.addEventListener("input", function (e) { if (e.target.id === "ask" || e.target.id === "ask2") showSugg(e.target.id, e.target.value); if (e.target.id === "ask") toggleAdd(); });
