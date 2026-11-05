@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v14";
+var BUILD = "v17";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -121,12 +121,63 @@ function catalogMatch(name) {
     var kw = kwList(c); for (var k = 0; k < kw.length; k++) if (n === kw[k] || (kw[k].length > 3 && n.indexOf(kw[k]) > -1)) return c; }
   return null;
 }
+function storeStats() { var d = byId(D.settings, "storestats"); return d ? safeParse(d.value, {}) : {}; }
+var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDay(ms) { var d = new Date(Number(ms)); if (isNaN(d)) return ""; var o = new Date().getFullYear() !== d.getFullYear() ? " " + d.getFullYear() : ""; return MON[d.getMonth()] + " " + d.getDate() + o; }
+function boughtInfo(c) {
+  if (!c) return ""; var s0 = storeStats()[c.id] || {}, lb = Number(c.lastBought) || 0, out = [];
+  if (lb) { out.push("Last bought " + fmtDay(lb)); if (c.timesBought) out.push(c.timesBought + (Number(c.timesBought) === 1 ? " trip" : " trips")); }
+  if (s0.p) out.push("usually $" + Number(s0.p).toFixed(2));
+  return out.join(" \u00b7 ");
+}
+function listState(name) {
+  var n = String(name || "").toLowerCase(), st2 = "";
+  D.list.forEach(function (i) { if (i.status !== "ordered" && String(i.name).toLowerCase() === n) { if (i.status === "list") st2 = st2 || "list"; else st2 = "cart"; } });
+  return st2;
+}
+function addPlain(o) {
+  var n = String(o.name).toLowerCase(), dup = D.list.filter(function (i) { return i.store === o.store && i.status !== "ordered" && String(i.name).toLowerCase() === n; })[0];
+  if (dup) { put("list", dup.id, {qty: (dup.qty || 1) + (o.qty || 1)}); return {id: dup.id, dup: true}; }
+  return {id: addLine(o), dup: false};
+}
+function storeModeHtml() {
+  var chk = safeParse(ls("pfk_chk") || "{}", {}), items = D.list.filter(function (i) { return i.store === st.store && i.status !== "ordered"; });
+  var groups = {}; items.forEach(function (i) { var k = i.cat || "other"; (groups[k] = groups[k] || []).push(i); });
+  var left = items.filter(function (i) { return !chk[i.id]; }).length;
+  return '<h3 id="shT">At ' + esc(st.store) + '</h3><p class="sub">' + left + " left of " + items.length + ". Tap to check off.</p>" + (Object.keys(groups).sort().map(function (k) { return '<div class="sechead"><h4>' + esc(k) + "</h4></div>" + groups[k].map(function (i) { var c = catalogMatch(i.name), b = c && c.lastBought ? "last bought " + fmtDay(c.lastBought) : ""; return '<button class="item" data-act="chk" data-id="' + esc(i.id) + '" style="width:100%;text-align:left;' + (chk[i.id] ? "opacity:.45;text-decoration:line-through" : "") + '"><div class="grow"><b>' + esc(i.name) + ((i.qty || 1) > 1 ? " x" + i.qty : "") + '</b><div class="sub">' + esc([i.size, b].filter(Boolean).join(" \u00b7 ")) + '</div></div><span class="chip' + (chk[i.id] ? " ok" : "") + '">' + (chk[i.id] ? "Got it" : "Get") + "</span></button>"; }).join(""); }).join("") || '<p class="empty">Nothing on the list.</p>') + '<button class="linkbtn" data-act="chkreset" style="display:block;margin:8px auto 0">Uncheck all</button><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>';
+}
+function recapHtml() {
+  var ss = storeStats(), by = {}, tot = 0;
+  D.catalog.forEach(function (c) { var x = ss[c.id]; if (x && x.p && x.d) { var m = String(x.d).slice(0, 7), v = Number(x.p) * (Number(x.q) || 1); by[m] = (by[m] || 0) + v; tot += v; } });
+  var top = D.catalog.filter(function (c) { return Number(c.timesBought) > 0; }).sort(function (a, b) { return b.timesBought - a.timesBought; }).slice(0, 8);
+  var dated = D.catalog.filter(function (c) { return Number(c.lastBought); }).length;
+  return '<h3 id="shT">Our Store recap</h3><p class="sub">' + D.catalog.length + " items in Our Store, " + dated + " with a purchase date.</p>" +
+    '<div class="sechead"><h4>Bought most often</h4></div>' + (top.map(function (c) { return '<div class="ing"><span>' + esc(c.brand || c.name) + '</span><span class="chip">' + c.timesBought + (Number(c.timesBought) === 1 ? " trip" : " trips") + "</span></div>"; }).join("") || '<p class="empty">No trips recorded yet.</p>') +
+    '<div class="sechead"><h4>Estimated spend by month</h4></div><p class="sub">Uses the latest price and quantity of each item, so it is a floor, not a total.</p>' + (Object.keys(by).sort().reverse().map(function (m) { return '<div class="ing"><span>' + MON[Number(m.slice(5, 7)) - 1] + " " + m.slice(0, 4) + '</span><span class="chip">$' + by[m].toFixed(0) + "</span></div>"; }).join("") || '<p class="empty">No prices yet.</p>') +
+    '<button class="linkbtn" data-act="close" style="display:block;margin:8px auto 0">Close</button>';
+}
+function storeList() {
+  var box = $("storeList"); if (!box) return; var qe = $("storeq"), q = qe ? qe.value.toLowerCase().trim() : "", toks = q.split(/\s+/).filter(Boolean);
+  var rows = D.catalog.filter(function (c) { var h = hay(c); return toks.every(function (t) { return h.indexOf(t) > -1; }); });
+  var sf = st.sf || "all", cut = Date.now() - 150 * 864e5;
+  if (sf === "old") rows = rows.filter(function (c) { var l = Number(c.lastBought) || 0; return l && l < cut; });
+  if (sf === "dups") {
+    var nrm = function (c) { return String(c.brand || c.name).toLowerCase().replace(/[^a-z0-9]/g, ""); }, seen = {}, pairs = [];
+    D.catalog.forEach(function (c) { var k = nrm(c); if (k.length < 3) return; (seen[k] = seen[k] || []).push(c); });
+    Object.keys(seen).forEach(function (k) { if (seen[k].length > 1) { var g = seen[k].slice().sort(function (a, b) { return (Number(b.timesBought) || 0) - (Number(a.timesBought) || 0); }); for (var j = 1; j < g.length; j++) pairs.push([g[0], g[j]]); } });
+    box.innerHTML = pairs.map(function (p) { return '<div class="item"><div class="grow"><div><b>' + esc(p[0].brand || p[0].name) + '</b></div><div class="sub">' + esc((p[0].size || "") + " + " + (p[1].size || "") + " \u00b7 same name listed twice") + '</div></div><button class="btn sm" data-act="storemerge" data-id="' + esc(p[0].id + "~" + p[1].id) + '">Merge</button></div>'; }).join("") || '<p class="empty">No obvious duplicates.</p>'; return;
+  }
+  rows.sort(function (a, b) { var x = Number(a.lastBought) || 0, y = Number(b.lastBought) || 0; if (!x && y) return 1; if (x && !y) return -1; return x - y; });
+  var total = rows.length; rows = rows.slice(0, 60);
+  box.innerHTML = (rows.map(function (c) { var arm = st.rmId === c.id; return '<div class="item">' + thumb(c.cat, c.brand || c.name) + '<div class="grow"><div><b>' + esc(c.brand || c.name) + '</b></div><div class="sub">' + esc([c.size, boughtInfo(c) || "Not dated yet"].filter(Boolean).join(" \u00b7 ")) + '</div></div><button class="btn sm' + (arm ? " danger" : "") + '" data-act="storerm" data-id="' + esc(c.id) + '">' + (arm ? "Tap to remove" : "Remove") + "</button></div>"; }).join("") || '<p class="empty">Nothing matches.</p>') + (total > 60 ? '<p class="sub">Showing 60 of ' + total + '. Search to narrow.</p>' : "");
+}
 function showSugg(id, q) {
-  var box = $(id === "ask" ? "sugg" : "sugg2"); if (!box) return;
+  var box = $(id === "ask" ? "sugg" : id === "liain" ? "suggL" : "sugg2"); if (!box) return;
   var m = q; if (id === "ask") { var p = parseAdd(q); m = p.items[0] || ""; }
+  if (id === "liain" && (/[?]/.test(m) || m.split(/\s+/).length > 4)) { box.innerHTML = ""; return; }
   var r = suggest(m);
-  var nm = (m || "").trim(), extra = nm.length >= 2 ? '<button class="new" data-act="newitem" data-in="' + id + '"><div class="thumb" style="background-image:url(img/c/' + guessCat(nm) + '.jpg)"></div><span class="grow"><b>Add &ldquo;' + esc(nm) + '&rdquo; as a new item</b><div class="hint">New to the app. It will be remembered for next time.</div></span><span class="chip">New</span></button>' : "";
-  box.innerHTML = r.map(function (c) { return '<button data-act="pickcat" data-id="' + esc(c.id) + '" data-in="' + id + '">' + thumb(c.cat, c.brand || c.name) + '<span class="grow"><b>' + esc(c.brand || c.name) + '</b><div class="hint">' + esc([c.size, c.timesBought ? "bought " + c.timesBought + "x" : ""].filter(Boolean).join(" · ")) + '</div></span><span class="chip ok">Add</span></button>'; }).join("") + extra;
+  var nm = (m || "").trim(), extra = nm.length >= 2 && id !== "liain" ? '<button class="new" data-act="newitem" data-in="' + id + '"><div class="thumb" style="background-image:url(img/c/' + guessCat(nm) + '.jpg)"></div><span class="grow"><b>Add &ldquo;' + esc(nm) + '&rdquo; as a new item</b><div class="hint">New to the app. It will be remembered for next time.</div></span><span class="chip">New</span></button>' : "";
+  box.innerHTML = r.map(function (c) { return '<button data-act="pickcat" data-id="' + esc(c.id) + '" data-in="' + id + '">' + thumb(c.cat, c.brand || c.name) + '<span class="grow"><b>' + esc(c.brand || c.name) + '</b><div class="hint">' + esc([c.size, boughtInfo(c)].filter(Boolean).join(" · ")) + '</div></span>' + (function () { var ls = listState(c.brand || c.name); return ls === "list" ? '<span class="chip">On list</span>' : ls === "cart" ? '<span class="chip">In cart</span>' : '<span class="chip ok">Add</span>'; })() + '</button>'; }).join("") + extra;
 }
 
 /* ---------- list actions ---------- */
@@ -185,21 +236,37 @@ function needsProduct(i) { return !catalogMatch(i.name); }
 function qtyStep(i) { return '<div class="step sm"><button data-act="dec" data-id="' + esc(i.id) + '" aria-label="Less">&minus;</button><span>' + (i.qty || 1) + '</span><button data-act="inc" data-id="' + esc(i.id) + '" aria-label="More">+</button></div>'; }
 function needRow(i) {
   var gen = st.store === "Stop & Shop" && needsProduct(i);
-  return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, i.note, i.addedBy ? "added by " + i.addedBy : ""].filter(Boolean).join(" · ")) + "</div>" +
+  return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, i.note, i.addedBy ? "added by " + i.addedBy : ""].filter(Boolean).join(" · ")) + "</div>" + (function () { var b = boughtInfo(catalogMatch(i.name)); return b ? '<div class="sub last">' + esc(b) + "</div>" : ""; })() +
     (gen ? '<button class="pickp" data-act="namep" data-id="' + esc(i.id) + '">Name a product once</button>' : "") + qtyStep(i) + "</div>" +
     '<button class="tocart" data-act="tocart" data-id="' + esc(i.id) + '">' + ic("cart", "") + 'To cart</button><button class="trash" data-act="del" data-id="' + esc(i.id) + '" aria-label="Remove ' + esc(i.name) + '">' + ic("x", "") + "</button></div>";
 }
 function cartRow(i, waiting) {
   var ss = st.store === "Stop & Shop";
-  return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, (i.qty || 1) > 1 ? "x" + i.qty : "", i.note].filter(Boolean).join(" · ")) + "</div>" +
+  return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, (i.qty || 1) > 1 ? "x" + i.qty : "", i.note].filter(Boolean).join(" · ")) + "</div>" + (function () { var b = boughtInfo(catalogMatch(i.name)); return b ? '<div class="sub last">' + esc(b) + "</div>" : ""; })() +
     (waiting ? '<span class="tag wait">Waiting to push</span> <button class="linkbtn" style="min-height:28px;padding:2px 6px;font-size:12px" data-act="toneeds" data-id="' + esc(i.id) + '">Back to Needs</button>' : '<span class="tag sync">' + (ss ? "In your Stop &amp; Shop cart" : "On the " + esc(st.store) + " list") + "</span>") + "</div></div>";
 }
 function storeSeg() { return '<div class="seg" role="group" aria-label="Store">' + stores.map(function (s) { var n = itemsFor(s).filter(function (i) { return i.status !== "ordered"; }).length; return '<button data-act="store" data-v="' + esc(s) + '" aria-pressed="' + (st.store === s) + '">' + esc(s) + (n ? "<b>" + n + "</b>" : "") + "</button>"; }).join("") + "</div>"; }
 function rc(r) { return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + recImg(r) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + "</div></button>"; }
+function dealVerdict(d) {
+  var c = catalogMatch(d.name || ""), u = c ? Number((storeStats()[c.id] || {}).p) : 0, sp = parseFloat(String(d.sale).replace(/[^0-9.]/g, ""));
+  if (!u || !sp) return c ? ' &middot; <span style="color:var(--muted)">you buy this</span>' : "";
+  var diff = u - sp;
+  if (diff >= 0.5 || diff / u >= 0.15) return ' &middot; <b style="color:var(--ok)">Good deal: $' + diff.toFixed(2) + " under your usual $" + u.toFixed(2) + "</b>";
+  if (diff > 0) return ' &middot; <span style="color:var(--muted)">Only $' + diff.toFixed(2) + " under usual</span>";
+  return ' &middot; <span style="color:var(--warn,#b3261e)">Not cheaper than your usual $' + u.toFixed(2) + "</span>";
+}
+function adviceHtml() {
+  var a = byId(D.settings, "advice"), cp = byId(D.settings, "coupons"), list = cp ? safeParse(cp.value, []) : [], h = "";
+  if (!a && !list.length) return "";
+  var txt = a ? String(a.value || "") : "";
+  h += '<div class="card"><h3>Lia&rsquo;s weekly advice</h3>' + (txt ? '<p style="margin:6px 0">' + esc(txt) + "</p>" : "");
+  if (list.length) h += '<div class="sub" style="margin:6px 0 4px">Coupons that match what you buy. Tap Clip and it goes on Hazel&rsquo;s account at the next weekly run.</div>' + list.slice(0, 8).map(function (c, i) { return '<div class="deal"><div class="grow"><b>' + esc(c.name) + '</b><div class="sub">' + esc(c.offer || "") + '</div></div>' + (c.state === "clipped" ? '<span class="chip ok">Clipped</span>' : c.state === "want" ? '<span class="chip">Queued</span>' : '<button class="btn sm" data-act="clip" data-id="' + i + '">Clip</button>') + "</div>"; }).join("");
+  return h + "</div>";
+}
 function dealsHtml(max) {
   var ds = dealsList().slice(0, max); if (!ds.length) return "";
   return '<div class="card"><h3>On sale from your usual items</h3><p class="sub" style="margin:6px 0 4px">Seen on Stop &amp; Shop ' + esc(ds[0].seen || "") + ". Tap Add and it waits in your cart queue.</p>" +
-    ds.map(function (d, i) { return '<div class="deal"><div class="grow"><b>' + esc(d.name) + '</b><div class="sub"><span style="color:var(--ok);font-weight:700">$' + esc(d.sale) + '</span> <span class="was">$' + esc(d.was) + "</span>" + (d.note ? " &middot; " + esc(d.note) : "") + '</div></div><button class="btn sm" data-act="adddeal" data-id="' + i + '">Add</button><button class="dealx" data-act="dismissdeal" data-id="' + i + '" aria-label="Not interested in ' + esc(d.name) + '">' + ic("x", "") + '</button></div>'; }).join("") + "</div>";
+    ds.map(function (d, i) { return '<div class="deal"><div class="grow"><b>' + esc(d.name) + '</b><div class="sub"><span style="color:var(--ok);font-weight:700">$' + esc(d.sale) + '</span> <span class="was">$' + esc(d.was) + "</span>" + (d.note ? " &middot; " + esc(d.note) : "") + dealVerdict(d) + '</div></div><button class="btn sm" data-act="adddeal" data-id="' + i + '">Add</button><button class="dealx" data-act="dismissdeal" data-id="' + i + '" aria-label="Not interested in ' + esc(d.name) + '">' + ic("x", "") + '</button></div>'; }).join("") + "</div>";
 }
 function meals() { var d = byId(D.settings, "meallog"); return d ? safeParse(d.value, {}) : {}; }
 function ago(ymd) { if (!ymd) return "not logged yet"; var s = String(ymd), d = new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)), n = Math.round((new Date(new Date().toDateString()) - d) / 864e5); return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 14 ? n + " days ago" : n < 60 ? Math.round(n / 7) + " weeks ago" : Math.round(n / 30) + " months ago"; }
@@ -353,7 +420,7 @@ function cook() {
   if (!st.chat.length) h += '<div class="aiRow">' + face() + '<div class="msg ai">Tap one to start, or tap the mic and talk.<div class="opts"><button class="opt fill" data-act="liaask" data-q="What can we cook tonight?">What can we cook tonight?</button><button class="opt" data-act="tool" data-v="sales">Check sales</button><button class="opt" data-act="tool" data-v="times">Check times</button><button class="opt" data-act="tab" data-v="recipes">Open Bangers</button></div></div></div>';
   else h += '<div class="newchat"><button class="linkbtn" data-act="newchat">New chat</button></div>';
   st.chat.forEach(function (c) { h += c.who === "me" ? '<div class="msg me">' + esc(c.t) + "</div>" : '<div class="aiRow">' + face() + '<div class="msg ai">' + c.t + "</div></div>"; });
-  return h + '</div><div class="bar2"><input type="text" id="liain" placeholder="Ask Lia, or say: add butter" aria-label="Ask Lia" autocomplete="off" enterkeyhint="send"><button class="round mic3" data-act="liamic" aria-label="Talk to Lia">' + ic("mic", "") + '</button><button class="round send" data-act="liasend" aria-label="Send">' + ic("send", "") + "</button></div>";
+  return h + '</div><div class="sugg" id="suggL"></div><div class="bar2"><input type="text" id="liain" placeholder="Ask Lia, or say: add butter" aria-label="Ask Lia" autocomplete="off" enterkeyhint="send"><button class="round mic3" data-act="liamic" aria-label="Talk to Lia">' + ic("mic", "") + '</button><button class="round send" data-act="liasend" aria-label="Send">' + ic("send", "") + "</button></div>";
 }
 var liaBusy = false;
 function liaKey() { return "lia_" + String(me.name || "family").toLowerCase().replace(/[^a-z0-9]/g, ""); }
@@ -414,6 +481,20 @@ function voteMini() {
   var tr = top ? byId(D.recipes, top) : null;
   return '<div class="card"><div class="vmini"><div class="grow"><h3>Dinner vote</h3><div class="sub" style="margin-top:3px">' + (tr ? esc(tr.name) + " is leading with " + counts[top] + " vote" + (counts[top] === 1 ? "" : "s") : "No votes yet today") + '</div></div><button class="btn sm" data-act="votes">Vote</button></div></div>';
 }
+function dueItems() {
+  var now = Date.now(), out = [];
+  D.catalog.forEach(function (c) {
+    var lb = Number(c.lastBought) || 0, q = Number(c.timesBought) || 0; if (!lb || q < 2) return;
+    var gap = 180 / q, since = (now - lb) / 864e5; if (since < gap * 0.9 || since > 170) return;
+    if (listState(c.brand || c.name)) return;
+    out.push({c: c, over: since / gap, since: Math.round(since), gap: Math.round(gap)});
+  });
+  return out.sort(function (a, b) { return b.over - a.over; }).slice(0, 5);
+}
+function restockHtml() {
+  var r = dueItems(); if (!r.length) return "";
+  return '<div class="card"><h3>Time to restock?</h3><p class="sub" style="margin:6px 0 4px">Based on how often you usually buy these.</p>' + r.map(function (x) { var c = x.c; return '<div class="deal"><div class="grow"><b>' + esc(c.brand || c.name) + '</b><div class="sub">' + esc("Last bought " + fmtDay(c.lastBought) + " \u00b7 about every " + x.gap + " days") + '</div></div><button class="btn sm" data-act="pickcat" data-id="' + esc(c.id) + '" data-in="ask">Add</button></div>'; }).join("") + "</div>";
+}
 function home() {
   var n = needsFor(st.store).length, w = queuedFor(st.store).length, c = cartFor(st.store).length + w;
   return dayHero() +
@@ -422,15 +503,15 @@ function home() {
     '<button class="cnt c2" data-act="goshop" data-v="cart"><span class="n">' + c + '</span><span class="l">In the cart</span><span class="s">' + (w ? w + " waiting to push" : "All synced with Stop &amp; Shop") + "</span></button></div>" +
     pushBar() + toolBtns(true) +
     '<button class="sc" data-act="tab" data-v="cook" style="width:100%;margin-bottom:14px"><span class="face"><img src="img/lia/f.png" alt=""></span><span><b>Ask Lia</b><small>What can we cook tonight?</small></span></button>' +
-    voteMini() + dealsHtml(3) +
-    '<div class="homelinks"><button class="linkbtn" data-act="family">Usual brands and family preferences</button>' + (standalone() ? "" : '<button class="linkbtn" data-act="showinstall">Install this as an app on your phone</button>') + "</div>";
+    voteMini() + adviceHtml() + dealsHtml(3) + restockHtml() +
+    '<div class="homelinks"><button class="linkbtn" data-act="recap">Our Store recap</button><button class="linkbtn" data-act="family">Usual brands and family preferences</button>' + (standalone() ? "" : '<button class="linkbtn" data-act="showinstall">Install this as an app on your phone</button>') + "</div>";
 }
 function shop() {
   var ss = st.store === "Stop & Shop", nd = needsFor(st.store), qd = queuedFor(st.store), cd = cartFor(st.store), od = orderedFor(st.store), v = st.shopView === "cart" ? "cart" : "needs";
   var seg = '<div class="seg2" role="group"><button data-act="shopview" data-v="needs" aria-pressed="' + (v === "needs") + '">Needs<b>' + nd.length + '</b></button><button data-act="shopview" data-v="cart" aria-pressed="' + (v === "cart") + '">Cart<b>' + (qd.length + cd.length) + "</b></button></div>";
   if (v === "needs") {
     return pageTop("Shop", "Needs list &middot; " + esc(st.store)) + seg + storeSeg() + toolBtns() +
-      '<div class="card"><b>Add to Needs</b><div class="sub">Start typing and your usual items appear.</div><div class="ask" style="margin-top:8px"><div class="grow"><input type="text" id="ask2" placeholder="e.g. syrup" aria-label="Item" autocomplete="off" enterkeyhint="send"></div><button class="btn" data-act="send2">Add</button></div><div class="sugg" id="sugg2"></div></div>' +
+      '<div class="card"><b>Add to Needs</b><div class="sub">Start typing and your usual items appear.</div><div class="ask" style="margin-top:8px"><div class="grow"><input type="text" id="ask2" placeholder="e.g. syrup" aria-label="Item" autocomplete="off" enterkeyhint="send"></div><button class="btn" data-act="send2">Add</button></div><div class="sugg" id="sugg2"></div><button class="big alt" data-act="atstore" style="margin-top:10px">I&rsquo;m at the store</button><button class="linkbtn" data-act="mystore" style="margin-top:6px">Manage Our Store (' + D.catalog.length + ' items)</button></div>' +
       '<div class="card"><div class="row"><h3 class="grow">Needs</h3><span class="sub">Holding list</span></div>' + (nd.length ? nd.map(needRow).join("") + '<button class="big" data-act="addall">Add all to cart (' + nd.length + ")</button>" : '<p class="empty">Nothing waiting. Add something above.</p>') + "</div>" +
       dealsHtml(6) + '<p class="sub">Moving an item to the cart does not buy anything. It waits there until someone taps Push.</p>';
   }
@@ -484,7 +565,7 @@ function recipeSheet(id) {
   var r = byId(D.recipes, id); if (!r) return "";
   var ings = recipeIngs(r), need = ings.filter(function (x) { return x.s === "need"; }), tag = {have: '<span class="chip ok">Have</span>', check: '<span class="chip info">Check</span>', need: '<span class="chip warn">Need</span>'};
   return '<div class="banner-img" style="background-image:url(' + recImg(r) + ');margin-top:0" role="img" aria-label="' + esc(r.name) + '"></div><h3 id="shT">' + esc(r.name) + '</h3><div class="sub">Feeds ' + (r.serves || 8) + (r.note ? " &middot; " + esc(r.note) : "") + (r.addedBy ? " &middot; suggested by " + esc(r.addedBy) : "") + "</div>" +
-    (ings.length ? '<div style="margin:10px 0">' + ings.map(function (x) { return '<div class="ing"><span>' + esc(x.n) + ' <span class="sub">' + esc(x.q) + "</span></span>" + tag[x.s] + "</div>"; }).join("") + "</div>" +
+    (ings.length ? '<div style="margin:10px 0">' + ings.map(function (x) { return '<div class="ing"><span>' + esc(x.n) + ' <span class="sub">' + esc(x.q) + "</span>" + (function () { var c = catalogMatch(x.n); return c ? '<div class="sub last">Usually ' + esc(c.brand || c.name) + (c.lastBought ? " \u00b7 last bought " + fmtDay(c.lastBought) : "") + "</div>" : ""; })() + "</span>" + tag[x.s] + "</div>"; }).join("") + "</div>" +
       (need.length ? '<button class="big" data-act="addneed" data-id="' + esc(r.id) + '">Add ' + need.length + " missing to " + esc(st.store) + " list</button>" : "<p>You have everything.</p>") : '<p class="sub" style="margin:10px 0">No ingredient list yet. Send Claude the recipe and it will fill this in.</p>') +
     '<button class="linkbtn" data-act="close">Close</button>';
 }
@@ -497,7 +578,7 @@ function render() {
   $("tabs").innerHTML = tabs.map(function (t) { return '<button class="tab" role="tab" style="position:relative" aria-selected="' + (st.tab === t[0]) + '" data-act="tab" data-v="' + t[0] + '">' + (t[0] === "shop" && qn ? '<span class="tbadge">' + qn + "</span>" : "") + ic(t[2]) + t[1] + "</button>"; }).join("");
   $("snap").hidden = !(st.tab === "pantry" || st.tab === "recipes");
   setStatus();
-  if (keep) { var el = $(keep.id); if (el) { el.value = keep.v; if (!keep.nf) el.focus(); if (keep.id !== "liain") showSugg(keep.id, keep.v); } }
+  if (keep) { var el = $(keep.id); if (el) { el.value = keep.v; if (!keep.nf) el.focus(); showSugg(keep.id, keep.v); } }
   toggleAdd();
 }
 
@@ -521,8 +602,17 @@ document.addEventListener("click", function (e) {
   else if (a === "typing") { st.typing = true; render(); var q = $("ask"); if (q) q.focus(); }
   else if (a === "send" || a === "send2") { var inp = $(a === "send" ? "ask" : "ask2"), v = inp ? inp.value.trim() : ""; if (!v) { toast("Type or dictate a request first."); return; }
     var p = a === "send" ? parseAdd(v) : {items: [v], store: st.store}; p.items.forEach(function (n) { addByName(n, p.store); }); st.store = p.store; inp.value = ""; render(); toast("Added " + p.items.join(", ") + " to " + p.store + "."); }
-  else if (a === "pickcat") { var c = byId(D.catalog, id), inEl = $(el.getAttribute("data-in")), store = st.store; if (c) { if (el.getAttribute("data-in") === "ask" && inEl) store = parseAdd(inEl.value).store; addFromCatalog(c, store); st.store = store; if (inEl) inEl.value = ""; render(); toast("Added " + (c.brand || c.name) + " to " + store + "."); } }
-  else if (a === "adddeal") { var dl = dealsList(), d = dl[Number(id)]; if (d) { addLine({name: d.name, size: d.size || "", cat: d.cat || guessCat(d.name), store: "Stop & Shop", qty: 1, status: "queued", note: "On sale $" + d.sale, addedBy: me.name}); dl.splice(Number(id), 1); put("settings", "deals", {value: JSON.stringify(dl)}); toast("Queued. It goes into your Stop & Shop cart at the next push."); } }
+  else if (a === "mystore") { st.rmId = ""; st.sf = "all"; sheet('<h3 id="shT">Our Store</h3><p class="sub">Everything we buy. Oldest purchases first, so you can clear out what we no longer get.</p><input type="text" id="storeq" placeholder="Search Our Store" autocomplete="off" aria-label="Search Our Store"><div class="seg2" style="margin:8px 0"><button data-act="storefilter" data-v="all" aria-pressed="true">All</button><button data-act="storefilter" data-v="old" aria-pressed="false">Not bought in 5+ months</button><button data-act="storefilter" data-v="dups" aria-pressed="false">Possible duplicates</button></div><div id="storeList"></div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>'); storeList(); }
+  else if (a === "atstore") { sheet(storeModeHtml()); }
+  else if (a === "chk") { var ck = safeParse(ls("pfk_chk") || "{}", {}); if (ck[id]) delete ck[id]; else ck[id] = 1; ls("pfk_chk", JSON.stringify(ck)); $("sheetBody").innerHTML = storeModeHtml(); }
+  else if (a === "chkreset") { ls("pfk_chk", "{}"); $("sheetBody").innerHTML = storeModeHtml(); }
+  else if (a === "recap") { sheet(recapHtml()); }
+  else if (a === "clip") { var cr = byId(D.settings, "coupons"), cl = cr ? safeParse(cr.value, []) : [], cc = cl[Number(id)]; if (cc) { cc.state = "want"; put("settings", "coupons", {value: JSON.stringify(cl)}); toast("Queued. Hazel's account gets it at the next weekly run."); } }
+  else if (a === "storefilter") { st.sf = el.getAttribute("data-v"); document.querySelectorAll('[data-act="storefilter"]').forEach(function (b) { b.setAttribute("aria-pressed", String(b === el)); }); storeList(); }
+  else if (a === "storemerge") { var pr = id.split("~"), keep = byId(D.catalog, pr[0]), drop = byId(D.catalog, pr[1]); if (keep && drop) { var tot = (Number(keep.timesBought) || 0) + (Number(drop.timesBought) || 0), lbm = Math.max(Number(keep.lastBought) || 0, Number(drop.lastBought) || 0); put("catalog", keep.id, {name: keep.name, brand: keep.brand || "", size: keep.size || "", cat: keep.cat || "", kw: keep.kw || "", store: keep.store || "Stop & Shop", lastBought: lbm || "", timesBought: tot || "", source: keep.source || "", ts: Date.now()}); del("catalog", drop.id); storeList(); toast("Merged into " + (keep.brand || keep.name) + "."); } }
+  else if (a === "storerm") { if (st.rmId === id) { var cm = byId(D.catalog, id), nmx = cm ? (cm.brand || cm.name) : "item"; st.rmId = ""; del("catalog", id); var ss0 = byId(D.settings, "storestats"); if (ss0) { var sj = safeParse(ss0.value, {}); delete sj[id]; put("settings", "storestats", {value: JSON.stringify(sj)}); } storeList(); toast("Removed " + nmx + " from Our Store."); } else { st.rmId = id; storeList(); } }
+  else if (a === "pickcat") { var c = byId(D.catalog, id), inEl = $(el.getAttribute("data-in")), store = st.store; if (c) { if (el.getAttribute("data-in") === "ask" && inEl) store = parseAdd(inEl.value).store; var was = listState(c.brand || c.name); addFromCatalog(c, store); st.store = store; if (inEl) inEl.value = ""; render(); toast(was ? (c.brand || c.name) + " was already there. Added one more." : "Added " + (c.brand || c.name) + " to " + store + "."); } }
+  else if (a === "adddeal") { var dl = dealsList(), d = dl[Number(id)]; if (d) { var rd = addPlain({name: d.name, size: d.size || "", cat: d.cat || guessCat(d.name), store: "Stop & Shop", qty: 1, status: "queued", note: "On sale $" + d.sale, addedBy: me.name}); dl.splice(Number(id), 1); put("settings", "deals", {value: JSON.stringify(dl)}); toast("Queued. It goes into your Stop & Shop cart at the next push."); } }
   else if (a === "recipe") { sheet(recipeSheet(id)); }
   else if (a === "addneed") { var r = byId(D.recipes, id); if (r) { var need = recipeIngs(r).filter(function (x) { return x.s === "need"; }); need.forEach(function (x) { addByName(x.n, st.store, "For " + r.name + " (" + x.q + ")"); }); closeSheet(); toast("Added " + need.length + " items to your " + st.store + " list."); } }
   else if (a === "pcycle") { var pp = byId(D.pantry, id), nx2 = {unconfirmed: "ok", ok: "low", low: "out", out: "ok"}; if (pp) put("pantry", id, {status: nx2[pp.status] || "ok"}); }
@@ -543,7 +633,7 @@ document.addEventListener("click", function (e) {
   else if (a === "cookit") { var rc2 = byId(D.recipes, id); if (rc2) { var ml = meals(); ml[id] = today(); put("settings", "meallog", {value: JSON.stringify(ml)}); st.chat.push({who: "ai", t: "Lovely. I logged " + esc(rc2.name) + " as made today. Enjoy it" + (me.name ? ", " + esc(me.name) : "") + "."}); st.tab = "cook"; render(); toast("Logged " + rc2.name + "."); } }
   else if (a === "liaask") { liaSay(el.getAttribute("data-q")); }
   else if (a === "liasend") { var li = $("liain"), lv = li ? li.value.trim() : ""; if (lv) { li.value = ""; liaSay(lv); } }
-  else if (a === "newitem") { var ie = $(el.getAttribute("data-in")), iv = ie ? (el.getAttribute("data-in") === "ask" ? parseAdd(ie.value).items[0] : ie.value.trim()) : "", ist = el.getAttribute("data-in") === "ask" && ie ? parseAdd(ie.value).store : st.store; if (iv) { var nmN = iv.charAt(0).toUpperCase() + iv.slice(1); addLine({name: nmN, size: "", cat: guessCat(iv), store: ist, qty: 1, status: "list", note: "New item", addedBy: me.name}); st.store = ist; if (ie) ie.value = ""; render(); toast("Added " + nmN + " to " + ist + "."); } }
+  else if (a === "newitem") { var ie = $(el.getAttribute("data-in")), iv = ie ? (el.getAttribute("data-in") === "ask" ? parseAdd(ie.value).items[0] : ie.value.trim()) : "", ist = el.getAttribute("data-in") === "ask" && ie ? parseAdd(ie.value).store : st.store; if (iv) { var nmN = iv.charAt(0).toUpperCase() + iv.slice(1); var rn = addPlain({name: nmN, size: "", cat: guessCat(iv), store: ist, qty: 1, status: "list", note: "New item", addedBy: me.name}); st.store = ist; if (ie) ie.value = ""; render(); toast(rn.dup ? nmN + " was already on the list. Made it 2." : "Added " + nmN + " to " + ist + "."); } }
   else if (a === "shopview") { st.shopView = el.getAttribute("data-v"); render(); }
   else if (a === "goshop") { st.tab = "shop"; st.shopView = el.getAttribute("data-v"); window.scrollTo(0, 0); closeSheet(); render(); }
   else if (a === "tocart") { i = byId(D.list, id); if (i) { var ssT = i.store === "Stop & Shop"; if (ssT && needsProduct(i)) nameSheet(id); else { put("list", id, {status: ssT ? "queued" : "cart"}); toast("Moved " + i.name + " to the cart."); swapCheck(i); } } }
@@ -567,7 +657,7 @@ document.addEventListener("click", function (e) {
   else if (a === "swapno") { swapDo(false); }
   else if (a === "close") { closeSheet(); }
 });
-document.addEventListener("input", function (e) { if (e.target.id === "ask" || e.target.id === "ask2") showSugg(e.target.id, e.target.value); if (e.target.id === "ask") toggleAdd(); });
+document.addEventListener("input", function (e) { if (e.target.id === "ask" || e.target.id === "ask2" || e.target.id === "liain") showSugg(e.target.id, e.target.value); if (e.target.id === "storeq") storeList(); if (e.target.id === "ask") toggleAdd(); });
 document.addEventListener("keydown", function (e) {
   if (e.key === "Enter" && (e.target.id === "ask" || e.target.id === "ask2")) { var b = document.querySelector('[data-act="' + (e.target.id === "ask" ? "send" : "send2") + '"]'); if (b) b.click(); }
   if (e.key === "Enter" && e.target.id === "pinIn") { var s = document.querySelector('[data-act="savepin"]'); if (s) s.click(); }
