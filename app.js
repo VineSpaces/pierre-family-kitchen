@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v17";
+var BUILD = "v18";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -236,7 +236,7 @@ function needsProduct(i) { return !catalogMatch(i.name); }
 function qtyStep(i) { return '<div class="step sm"><button data-act="dec" data-id="' + esc(i.id) + '" aria-label="Less">&minus;</button><span>' + (i.qty || 1) + '</span><button data-act="inc" data-id="' + esc(i.id) + '" aria-label="More">+</button></div>'; }
 function needRow(i) {
   var gen = st.store === "Stop & Shop" && needsProduct(i);
-  return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, i.note, i.addedBy ? "added by " + i.addedBy : ""].filter(Boolean).join(" · ")) + "</div>" + (function () { var b = boughtInfo(catalogMatch(i.name)); return b ? '<div class="sub last">' + esc(b) + "</div>" : ""; })() +
+  return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, i.note, i.addedBy ? "added by " + i.addedBy : ""].filter(Boolean).join(" · ")) + "</div>" + (function () { var b = boughtInfo(catalogMatch(i.name)); return b ? '<div class="sub last">' + esc(b) + "</div>" : ""; })() + tagsFor(i) +
     (gen ? '<button class="pickp" data-act="namep" data-id="' + esc(i.id) + '">Name a product once</button>' : "") + qtyStep(i) + "</div>" +
     '<button class="tocart" data-act="tocart" data-id="' + esc(i.id) + '">' + ic("cart", "") + 'To cart</button><button class="trash" data-act="del" data-id="' + esc(i.id) + '" aria-label="Remove ' + esc(i.name) + '">' + ic("x", "") + "</button></div>";
 }
@@ -254,6 +254,36 @@ function dealVerdict(d) {
   if (diff >= 0.5 || diff / u >= 0.15) return ' &middot; <b style="color:var(--ok)">Good deal: $' + diff.toFixed(2) + " under your usual $" + u.toFixed(2) + "</b>";
   if (diff > 0) return ' &middot; <span style="color:var(--muted)">Only $' + diff.toFixed(2) + " under usual</span>";
   return ' &middot; <span style="color:var(--warn,#b3261e)">Not cheaper than your usual $' + u.toFixed(2) + "</span>";
+}
+function dealFor(name) {
+  var c = catalogMatch(name || ""), n = String(name || "").toLowerCase(), hit = null;
+  dealsList().forEach(function (d) { if (hit) return; var dc = catalogMatch(d.name || ""); if ((c && dc && dc.id === c.id) || String(d.name).toLowerCase() === n) hit = d; });
+  return hit;
+}
+function couponFor(name) {
+  var c = catalogMatch(name || ""), cp = byId(D.settings, "coupons"), list = cp ? safeParse(cp.value, []) : [], kws = c ? kwList(c).filter(function (k) { return k.length > 3; }) : [], hit = null;
+  var n = String(name || "").toLowerCase();
+  list.forEach(function (x) { if (hit) return; var cn = String(x.name || "").toLowerCase(); if (kws.some(function (k) { return cn.indexOf(k) > -1; }) || (n.length > 3 && cn.indexOf(n) > -1)) hit = x; });
+  return hit;
+}
+function tagsFor(i) {
+  var d = dealFor(i.name), cp = couponFor(i.name), h = "";
+  if (d) h += '<div class="sub last" style="color:var(--ok);font-weight:700">On sale $' + esc(d.sale) + (d.was ? " (was $" + esc(d.was) + ")" : "") + "</div>";
+  if (cp) h += '<div class="sub last" style="color:var(--ok)">Coupon: ' + esc(cp.offer || cp.name) + "</div>";
+  return h;
+}
+function alertHtml() {
+  var hits = [];
+  D.list.forEach(function (i) { if (i.status === "ordered" || i.status === "cart") return; var d = dealFor(i.name), cp = couponFor(i.name); if (d || cp) hits.push({i: i, d: d, cp: cp}); });
+  if (!hits.length) return "";
+  return '<div class="card" style="border-color:var(--ok)"><h3>Sale alert on your list</h3>' + hits.slice(0, 5).map(function (h) { return '<div class="deal"><div class="grow"><b>' + esc(h.i.name) + '</b><div class="sub">' + esc((h.d ? "On sale $" + h.d.sale + (h.d.was ? " (was $" + h.d.was + ")" : "") : "") + (h.d && h.cp ? " \u00b7 " : "") + (h.cp ? "Coupon: " + (h.cp.offer || h.cp.name) : "")) + "</div></div></div>"; }).join("") + "</div>";
+}
+function budgetVal() { var b = byId(D.settings, "budget"); return b ? Number(b.value) || 0 : 0; }
+function budgetHtml() {
+  var b = budgetVal(), pr = byId(D.settings, "push"), pv = pr ? String(pr.value || "") : "", sub = /^done\|/.test(pv) ? parseFloat(String(subtotalOf(pv) || "0").replace(/,/g, "")) || 0 : 0;
+  if (!b) return '<div class="homelinks" style="margin:0 0 10px"><button class="linkbtn" data-act="budget">Set a weekly budget</button></div>';
+  var pct = Math.min(100, Math.round(sub / b * 100)), over = sub > b;
+  return '<div class="card"><div class="row"><h3 class="grow">Weekly budget</h3><button class="linkbtn" data-act="budget">Change</button></div><div style="height:10px;border-radius:6px;background:var(--line);overflow:hidden;margin:8px 0"><div style="height:100%;width:' + pct + "%;background:" + (over ? "#b3261e" : "var(--ok)") + '"></div></div><div class="sub">' + (sub ? "Cart $" + sub.toFixed(2) + " of $" + b.toFixed(2) + (over ? " \u00b7 over by $" + (sub - b).toFixed(2) : " \u00b7 $" + (b - sub).toFixed(2) + " left") : "Push to the cart and your running total shows here. Budget $" + b.toFixed(2)) + "</div></div>";
 }
 function adviceHtml() {
   var a = byId(D.settings, "advice"), cp = byId(D.settings, "coupons"), list = cp ? safeParse(cp.value, []) : [], h = "";
@@ -503,7 +533,7 @@ function home() {
     '<button class="cnt c2" data-act="goshop" data-v="cart"><span class="n">' + c + '</span><span class="l">In the cart</span><span class="s">' + (w ? w + " waiting to push" : "All synced with Stop &amp; Shop") + "</span></button></div>" +
     pushBar() + toolBtns(true) +
     '<button class="sc" data-act="tab" data-v="cook" style="width:100%;margin-bottom:14px"><span class="face"><img src="img/lia/f.png" alt=""></span><span><b>Ask Lia</b><small>What can we cook tonight?</small></span></button>' +
-    voteMini() + adviceHtml() + dealsHtml(3) + restockHtml() +
+    voteMini() + alertHtml() + budgetHtml() + adviceHtml() + dealsHtml(3) + restockHtml() +
     '<div class="homelinks"><button class="linkbtn" data-act="recap">Our Store recap</button><button class="linkbtn" data-act="family">Usual brands and family preferences</button>' + (standalone() ? "" : '<button class="linkbtn" data-act="showinstall">Install this as an app on your phone</button>') + "</div>";
 }
 function shop() {
@@ -603,6 +633,8 @@ document.addEventListener("click", function (e) {
   else if (a === "send" || a === "send2") { var inp = $(a === "send" ? "ask" : "ask2"), v = inp ? inp.value.trim() : ""; if (!v) { toast("Type or dictate a request first."); return; }
     var p = a === "send" ? parseAdd(v) : {items: [v], store: st.store}; p.items.forEach(function (n) { addByName(n, p.store); }); st.store = p.store; inp.value = ""; render(); toast("Added " + p.items.join(", ") + " to " + p.store + "."); }
   else if (a === "mystore") { st.rmId = ""; st.sf = "all"; sheet('<h3 id="shT">Our Store</h3><p class="sub">Everything we buy. Oldest purchases first, so you can clear out what we no longer get.</p><input type="text" id="storeq" placeholder="Search Our Store" autocomplete="off" aria-label="Search Our Store"><div class="seg2" style="margin:8px 0"><button data-act="storefilter" data-v="all" aria-pressed="true">All</button><button data-act="storefilter" data-v="old" aria-pressed="false">Not bought in 5+ months</button><button data-act="storefilter" data-v="dups" aria-pressed="false">Possible duplicates</button></div><div id="storeList"></div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>'); storeList(); }
+  else if (a === "budget") { sheet('<h3 id="shT">Weekly budget</h3><p class="sub">Your running cart total shows against this on Home. Leave empty to turn it off.</p><input type="text" id="budIn" inputmode="decimal" placeholder="e.g. 250" value="' + (budgetVal() || "") + '" autocomplete="off" aria-label="Weekly budget"><button class="big" data-act="budsave">Save</button><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Cancel</button>'); }
+  else if (a === "budsave") { var bi = $("budIn"), bv = bi ? parseFloat(bi.value.replace(/[^0-9.]/g, "")) : 0; put("settings", "budget", {value: String(bv > 0 ? bv : 0)}); closeSheet(true); toast(bv > 0 ? "Budget set to $" + bv.toFixed(0) + "." : "Budget turned off."); }
   else if (a === "atstore") { sheet(storeModeHtml()); }
   else if (a === "chk") { var ck = safeParse(ls("pfk_chk") || "{}", {}); if (ck[id]) delete ck[id]; else ck[id] = 1; ls("pfk_chk", JSON.stringify(ck)); $("sheetBody").innerHTML = storeModeHtml(); }
   else if (a === "chkreset") { ls("pfk_chk", "{}"); $("sheetBody").innerHTML = storeModeHtml(); }
