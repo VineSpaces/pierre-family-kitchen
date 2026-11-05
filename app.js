@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v18";
+var BUILD = "v19";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -511,6 +511,68 @@ function voteMini() {
   var tr = top ? byId(D.recipes, top) : null;
   return '<div class="card"><div class="vmini"><div class="grow"><h3>Dinner vote</h3><div class="sub" style="margin-top:3px">' + (tr ? esc(tr.name) + " is leading with " + counts[top] + " vote" + (counts[top] === 1 ? "" : "s") : "No votes yet today") + '</div></div><button class="btn sm" data-act="votes">Vote</button></div></div>';
 }
+/* ---------- meal planner ---------- */
+var SLOTS = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"], ["s", "Snack"]];
+var QUICK = {b: ["Pancakes", "Waffles", "Eggs and toast", "Cereal", "Oatmeal"], l: ["Sandwiches", "Leftovers", "Mac and cheese", "Chicken nuggets"], d: ["Leftovers", "Takeout"], s: ["Fruit", "Crackers and cheese", "Yogurt", "Popcorn"]};
+function dkey(d) { return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+function weekDays(off) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 7 * (off || 0)); var a = []; for (var i = 0; i < 7; i++) { var x = new Date(d); x.setDate(d.getDate() + i); a.push(x); } return a; }
+function planAll() { var r = byId(D.settings, "mealplan"); return r ? safeParse(r.value, {}) : {}; }
+function planSave(p) { var cut = dkey(new Date(Date.now() - 21 * 864e5)); Object.keys(p).forEach(function (k) { if (Number(k) < cut) delete p[k]; }); put("settings", "mealplan", {value: JSON.stringify(p)}); }
+function slotName(e) { if (!e) return ""; if (e.r) { var r = byId(D.recipes, e.r); return r ? r.name : (e.t || "Recipe"); } return e.t || ""; }
+function plan() {
+  var off = st.wk || 0, days = weekDays(off), p = planAll(), tk = dkey(new Date()), sug = 0, any = 0;
+  var h = pageTop("Meal plan", esc(fmtDay(days[0].getTime()) + " to " + fmtDay(days[6].getTime())));
+  h += '<div class="seg2" role="group"><button data-act="wk" data-v="0" aria-pressed="' + (off === 0) + '">This week</button><button data-act="wk" data-v="1" aria-pressed="' + (off === 1) + '">Next week</button></div>';
+  var body = days.map(function (d) {
+    var k = dkey(d), day = p[k] || {}, rows = SLOTS.map(function (sl) { var e = day[sl[0]]; if (e) { any++; if (e.s) sug++; }
+      return '<button class="pslot" data-act="pslot" data-id="' + k + "|" + sl[0] + '"><span class="pl">' + sl[1] + '</span><span class="grow">' + (e ? "<b>" + esc(slotName(e)) + "</b>" : '<span class="sub">Tap to add</span>') + "</span>" + (e && e.s ? '<span class="chip">Lia suggests</span>' : "") + "</button>"; }).join("");
+    return '<div class="card pday' + (k === tk ? " today" : "") + '"><h3>' + DAYS[d.getDay()] + ' <span class="sub">' + esc(MON[d.getMonth()] + " " + d.getDate()) + "</span></h3>" + rows + "</div>";
+  }).join("");
+  h += '<div class="card"><button class="big" data-act="pauto">Lia, fill my week</button><div class="row" style="margin-top:8px;gap:8px">' + (sug ? '<button class="btn sm" data-act="pokall">Approve all (' + sug + ")</button>" : "") + '<button class="btn sm" data-act="pgroc"' + (any ? "" : " disabled") + '>Groceries for this week</button>' + (any ? '<button class="linkbtn" data-act="pclearwk">Clear week</button>' : "") + '</div><div class="sub" style="margin-top:6px">Lia fills the empty spots from your recipes and what you made least recently. Tap any spot to swap it. Nothing goes on your Needs list until you tap Groceries and approve.</div></div>';
+  return h + body + '<button class="linkbtn" data-act="tab" data-v="home" style="display:block;margin:10px auto">Back to Home</button>';
+}
+function pickList() {
+  var box = $("pl"); if (!box) return; var qe = $("pq"), q = qe ? qe.value.toLowerCase().trim() : "", ml = meals();
+  var rs = D.recipes.filter(function (r) { return !q || String(r.name).toLowerCase().indexOf(q) > -1; }).sort(function (a, b) { return (ml[a.id] || 0) - (ml[b.id] || 0); });
+  box.innerHTML = rs.map(function (r) { return '<button class="item" data-act="ppick" data-id="' + esc(r.id) + '" style="width:100%;text-align:left"><div class="pic2" style="width:36px;height:36px;border-radius:8px;background:url(' + recImg(r) + ') center/cover"></div><div class="grow"><b>' + esc(r.name) + "</b>" + (ml[r.id] ? '<div class="sub">Last made ' + esc(fmtDay(new Date(Math.floor(ml[r.id] / 10000), Math.floor(ml[r.id] / 100) % 100 - 1, ml[r.id] % 100, 12).getTime())) + "</div>" : '<div class="sub">Not made yet</div>') + "</div></button>"; }).join("") || '<p class="empty">No recipes match. Type a name below instead.</p>';
+}
+function pickSheet(id) {
+  var pr = id.split("|"), k = pr[0], sl = pr[1], dt = new Date(Math.floor(k / 10000), Math.floor(k / 100) % 100 - 1, k % 100, 12), e = (planAll()[k] || {})[sl], nm = SLOTS.filter(function (x) { return x[0] === sl; })[0][1];
+  st.pslot = id;
+  sheet('<h3 id="shT">' + nm + " &middot; " + esc(DAYS[dt.getDay()] + " " + MON[dt.getMonth()] + " " + dt.getDate()) + "</h3>" + (e ? '<p class="sub">Now: <b>' + esc(slotName(e)) + "</b></p>" + (e.s ? '<button class="btn sm" data-act="pok">Looks good</button> ' : "") + '<button class="linkbtn" data-act="pclear">Clear this spot</button>' : "") +
+    '<div class="sub" style="margin:10px 0 4px">Quick picks</div><div class="opts">' + QUICK[sl].map(function (q) { return '<button class="opt" data-act="pquick" data-v="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") + "</div>" +
+    '<div class="sub" style="margin:10px 0 4px">Your recipes</div><input type="text" id="pq" placeholder="Search recipes" autocomplete="off" aria-label="Search recipes"><div id="pl" style="max-height:34vh;overflow:auto;margin-top:6px"></div>' +
+    '<div class="sub" style="margin:10px 0 4px">Or type something</div><div class="ask"><div class="grow"><input type="text" id="pt" placeholder="e.g. Jerk chicken" autocomplete="off" aria-label="Meal"></div><button class="btn" data-act="pfree">Add</button></div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>'); pickList();
+}
+function setSlot(id, e) { var pr = id.split("|"), p = planAll(); p[pr[0]] = p[pr[0]] || {}; if (e) p[pr[0]][pr[1]] = e; else delete p[pr[0]][pr[1]]; planSave(p); }
+function planAuto() {
+  var off = st.wk || 0, days = weekDays(off), p = planAll(), tk = dkey(new Date()), ml = meals(), used = {}, n = 0;
+  days.forEach(function (d) { var e = (p[dkey(d)] || {}).d; if (e && e.r) used[e.r] = 1; });
+  var rs = D.recipes.map(function (r) { var ig = recipeIngs(r), need = ig.filter(function (x) { return x.s === "need"; }).length; return {r: r, has: ig.length > 0, need: need, last: ml[r.id] || 0}; });
+  rs.sort(function (x, y) { return x.last - y.last || (x.has ? 0 : 1) - (y.has ? 0 : 1) || x.need - y.need; });
+  days.forEach(function (d, di) {
+    var k = dkey(d); if (k < tk) return; p[k] = p[k] || {};
+    SLOTS.forEach(function (sl) {
+      if (p[k][sl[0]]) return;
+      if (sl[0] === "d") { var pick = rs.filter(function (x) { return !used[x.r.id]; })[0]; if (!pick) return; used[pick.r.id] = 1; p[k].d = {r: pick.r.id, s: 1}; n++; }
+      else { var q = QUICK[sl[0]]; p[k][sl[0]] = {t: q[(di + (sl[0] === "l" ? 1 : 0)) % q.length], s: 1}; n++; }
+    });
+  });
+  planSave(p); return n;
+}
+function groceryItems() {
+  var days = weekDays(st.wk || 0), p = planAll(), out = [], seen = {}, noList = [], tk = dkey(new Date());
+  days.forEach(function (d) { var k = dkey(d); if (k < tk) return; SLOTS.forEach(function (sl) { var e = (p[k] || {})[sl[0]]; if (!e) return;
+    if (e.r) { var r = byId(D.recipes, e.r); if (!r) return; var ig = recipeIngs(r); if (!ig.length) { noList.push(r.name); return; }
+      ig.forEach(function (x) { if (x.s !== "need") return; var c = catalogMatch(x.n), key = String(c ? (c.brand || c.name) : x.n).toLowerCase(); if (seen[key] || listState(c ? (c.brand || c.name) : x.n)) return; seen[key] = 1; out.push({name: x.n, note: "For " + r.name}); }); }
+    else if (e.t) { var c2 = catalogMatch(e.t); if (c2) { var key2 = String(c2.brand || c2.name).toLowerCase(); if (!seen[key2] && !listState(c2.brand || c2.name)) { seen[key2] = 1; out.push({name: e.t, note: "For " + e.t}); } } }
+  }); });
+  return {items: out, noList: noList.filter(function (v, i, a) { return a.indexOf(v) === i; })};
+}
+function planToday() {
+  var p = planAll(), day = p[dkey(new Date())] || {}, rows = SLOTS.filter(function (sl) { return day[sl[0]]; }).map(function (sl) { return '<div class="ing"><span><span class="sub">' + sl[1] + "</span> " + esc(slotName(day[sl[0]])) + "</span>" + (sl[0] === "d" && day.d.r ? '<button class="btn sm" data-act="pmade" data-id="' + esc(day.d.r) + '">Made it</button>' : "") + "</div>"; }).join("");
+  return '<div class="card"><div class="row"><h3 class="grow">Meal plan</h3><button class="btn sm" data-act="tab" data-v="plan">' + (rows ? "Open" : "Plan the week") + "</button></div>" + (rows || '<p class="sub" style="margin:6px 0 0">Nothing planned for today. Let Lia fill the week.</p>') + "</div>";
+}
 function dueItems() {
   var now = Date.now(), out = [];
   D.catalog.forEach(function (c) {
@@ -533,7 +595,7 @@ function home() {
     '<button class="cnt c2" data-act="goshop" data-v="cart"><span class="n">' + c + '</span><span class="l">In the cart</span><span class="s">' + (w ? w + " waiting to push" : "All synced with Stop &amp; Shop") + "</span></button></div>" +
     pushBar() + toolBtns(true) +
     '<button class="sc" data-act="tab" data-v="cook" style="width:100%;margin-bottom:14px"><span class="face"><img src="img/lia/f.png" alt=""></span><span><b>Ask Lia</b><small>What can we cook tonight?</small></span></button>' +
-    voteMini() + alertHtml() + budgetHtml() + adviceHtml() + dealsHtml(3) + restockHtml() +
+    voteMini() + planToday() + alertHtml() + budgetHtml() + adviceHtml() + dealsHtml(3) + restockHtml() +
     '<div class="homelinks"><button class="linkbtn" data-act="recap">Our Store recap</button><button class="linkbtn" data-act="family">Usual brands and family preferences</button>' + (standalone() ? "" : '<button class="linkbtn" data-act="showinstall">Install this as an app on your phone</button>') + "</div>";
 }
 function shop() {
@@ -587,7 +649,7 @@ function pan() {
 }
 function rec() {
   return pageTop("Bangers", "Family favorites and new finds") +
-    '<div class="card row"><div class="grow"><h3>Suggest a meal</h3><div class="sub">Anyone can add one. Send Claude a screenshot to turn it into a full recipe.</div></div><button class="btn" data-act="suggest">Add</button></div>' +
+    '<div class="card row"><div class="grow"><h3>Meal plan</h3><div class="sub">Plan breakfast, lunch, dinner and snacks for the week.</div></div><button class="btn" data-act="tab" data-v="plan">Open</button></div><div class="card row"><div class="grow"><h3>Suggest a meal</h3><div class="sub">Anyone can add one. Send Claude a screenshot to turn it into a full recipe.</div></div><button class="btn" data-act="suggest">Add</button></div>' +
     (D.recipes.length ? '<div class="grid2">' + D.recipes.map(function (r) { var n = recipeIngs(r).filter(function (x) { return x.s === "need"; }).length; return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + recImg(r) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + '<div class="sub">' + (r.ings && r.ings.length ? n + " to buy" : (r.addedBy ? "suggested by " + esc(r.addedBy) : "suggested")) + " &middot; made " + lastMade(r.id) + "</div></div></button>"; }).join("") + "</div>" : '<p class="empty">No recipes yet.</p>') +
     '<p class="sub" style="margin-top:12px">Starter recipes are for a family of 8. Tell Claude your real versions and they replace them.</p>';
 }
@@ -599,7 +661,7 @@ function recipeSheet(id) {
       (need.length ? '<button class="big" data-act="addneed" data-id="' + esc(r.id) + '">Add ' + need.length + " missing to " + esc(st.store) + " list</button>" : "<p>You have everything.</p>") : '<p class="sub" style="margin:10px 0">No ingredient list yet. Send Claude the recipe and it will fill this in.</p>') +
     '<button class="linkbtn" data-act="close">Close</button>';
 }
-var views = {home: home, shop: shop, cook: cook, pantry: pan, recipes: rec};
+var views = {home: home, shop: shop, cook: cook, pantry: pan, recipes: rec, plan: plan};
 var tabs = [["home", "Home", "home"], ["shop", "Shop", "cart"], ["cook", "Cook", "cook"], ["pantry", "Pantry", "pantry"], ["recipes", "Bangers", "book"]];
 function render() {
   var a = document.activeElement, keep = a && a.id && /^(ask2?|liain)$/.test(a.id) ? {id: a.id, v: a.value} : null, lk = $("liain"); if (!keep && lk && lk.value) keep = {id: "liain", v: lk.value, nf: 1};
@@ -635,6 +697,19 @@ document.addEventListener("click", function (e) {
   else if (a === "mystore") { st.rmId = ""; st.sf = "all"; sheet('<h3 id="shT">Our Store</h3><p class="sub">Everything we buy. Oldest purchases first, so you can clear out what we no longer get.</p><input type="text" id="storeq" placeholder="Search Our Store" autocomplete="off" aria-label="Search Our Store"><div class="seg2" style="margin:8px 0"><button data-act="storefilter" data-v="all" aria-pressed="true">All</button><button data-act="storefilter" data-v="old" aria-pressed="false">Not bought in 5+ months</button><button data-act="storefilter" data-v="dups" aria-pressed="false">Possible duplicates</button></div><div id="storeList"></div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>'); storeList(); }
   else if (a === "budget") { sheet('<h3 id="shT">Weekly budget</h3><p class="sub">Your running cart total shows against this on Home. Leave empty to turn it off.</p><input type="text" id="budIn" inputmode="decimal" placeholder="e.g. 250" value="' + (budgetVal() || "") + '" autocomplete="off" aria-label="Weekly budget"><button class="big" data-act="budsave">Save</button><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Cancel</button>'); }
   else if (a === "budsave") { var bi = $("budIn"), bv = bi ? parseFloat(bi.value.replace(/[^0-9.]/g, "")) : 0; put("settings", "budget", {value: String(bv > 0 ? bv : 0)}); closeSheet(true); toast(bv > 0 ? "Budget set to $" + bv.toFixed(0) + "." : "Budget turned off."); }
+  else if (a === "wk") { st.wk = Number(el.getAttribute("data-v")) || 0; render(); }
+  else if (a === "pslot") { pickSheet(id); }
+  else if (a === "ppick") { setSlot(st.pslot, {r: id}); closeSheet(true); render(); }
+  else if (a === "pquick") { setSlot(st.pslot, {t: el.getAttribute("data-v")}); closeSheet(true); render(); }
+  else if (a === "pfree") { var pt = $("pt"), pv = pt ? pt.value.trim() : ""; if (pv) { setSlot(st.pslot, {t: pv.charAt(0).toUpperCase() + pv.slice(1)}); closeSheet(true); render(); } }
+  else if (a === "pclear") { setSlot(st.pslot, null); closeSheet(true); render(); }
+  else if (a === "pok") { var pe = (planAll()[st.pslot.split("|")[0]] || {})[st.pslot.split("|")[1]]; if (pe) { delete pe.s; setSlot(st.pslot, pe); } closeSheet(true); render(); }
+  else if (a === "pokall") { var pa = planAll(); Object.keys(pa).forEach(function (k) { Object.keys(pa[k]).forEach(function (sl) { if (pa[k][sl] && pa[k][sl].s) delete pa[k][sl].s; }); }); planSave(pa); render(); toast("Approved."); }
+  else if (a === "pclearwk") { var pw = planAll(); weekDays(st.wk || 0).forEach(function (d) { delete pw[dkey(d)]; }); planSave(pw); render(); toast("Week cleared."); }
+  else if (a === "pauto") { var pn = planAuto(); render(); toast(pn ? "Lia filled " + pn + " spots. Tap any to swap." : "Nothing empty to fill."); }
+  else if (a === "pmade") { var mm = meals(); mm[id] = today(); put("settings", "meallog", {value: JSON.stringify(mm)}); toast("Logged as made."); }
+  else if (a === "pgroc") { var g = groceryItems(); sheet('<h3 id="shT">Groceries for the week</h3>' + (g.items.length ? '<p class="sub">Only what you are missing. Your usual brands are used where we know them.</p>' + g.items.map(function (x) { return '<div class="ing"><span>' + esc(x.name) + ' <span class="sub">' + esc(x.note) + "</span></span></div>"; }).join("") + '<button class="big" data-act="pgrocgo">Add ' + g.items.length + " to " + esc(st.store) + " Needs</button>" : '<p class="empty">Nothing missing. You already have what these meals need.</p>') + (g.noList.length ? '<p class="sub">No ingredient list yet for: ' + esc(g.noList.join(", ")) + ". Send Claude the recipe to fill it in.</p>" : "") + '<button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>'); }
+  else if (a === "pgrocgo") { var g2 = groceryItems(); g2.items.forEach(function (x) { addByName(x.name, st.store, x.note); }); closeSheet(true); toast("Added " + g2.items.length + " to Needs."); }
   else if (a === "atstore") { sheet(storeModeHtml()); }
   else if (a === "chk") { var ck = safeParse(ls("pfk_chk") || "{}", {}); if (ck[id]) delete ck[id]; else ck[id] = 1; ls("pfk_chk", JSON.stringify(ck)); $("sheetBody").innerHTML = storeModeHtml(); }
   else if (a === "chkreset") { ls("pfk_chk", "{}"); $("sheetBody").innerHTML = storeModeHtml(); }
@@ -689,7 +764,7 @@ document.addEventListener("click", function (e) {
   else if (a === "swapno") { swapDo(false); }
   else if (a === "close") { closeSheet(); }
 });
-document.addEventListener("input", function (e) { if (e.target.id === "ask" || e.target.id === "ask2" || e.target.id === "liain") showSugg(e.target.id, e.target.value); if (e.target.id === "storeq") storeList(); if (e.target.id === "ask") toggleAdd(); });
+document.addEventListener("input", function (e) { if (e.target.id === "ask" || e.target.id === "ask2" || e.target.id === "liain") showSugg(e.target.id, e.target.value); if (e.target.id === "storeq") storeList(); if (e.target.id === "pq") pickList(); if (e.target.id === "ask") toggleAdd(); });
 document.addEventListener("keydown", function (e) {
   if (e.key === "Enter" && (e.target.id === "ask" || e.target.id === "ask2")) { var b = document.querySelector('[data-act="' + (e.target.id === "ask" ? "send" : "send2") + '"]'); if (b) b.click(); }
   if (e.key === "Enter" && e.target.id === "pinIn") { var s = document.querySelector('[data-act="savepin"]'); if (s) s.click(); }
