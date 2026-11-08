@@ -6,12 +6,12 @@ var stores = ["Stop & Shop", "Instacart", "Target"];
 var cartUrl = {"Stop & Shop": "https://stopandshop.com/cart", "Instacart": "https://www.instacart.com/", "Target": "https://www.target.com/cart"};
 var order = ["list", "cart", "ordered"], lab = {list: "On list", cart: "In cart", ordered: "Ordered by you"};
 var banners = {"Fridge": "img/fridge.jpg", "Pantry": "img/pantry.jpg", "Freezer": "img/freezer.jpg"};
-var TABS = ["list", "catalog", "pantry", "recipes", "votes", "members", "settings"];
-var D = {list: [], catalog: [], pantry: [], recipes: [], votes: [], members: [], settings: []};
+var TABS = ["list", "catalog", "pantry", "recipes", "votes", "members", "settings", "coffee"];
+var D = {list: [], catalog: [], pantry: [], recipes: [], votes: [], members: [], settings: [], coffee: []};
 var st = {chat: [], chatLoaded: false, toolOpen: "", pushOpen: false, voteOpen: false, shopView: "needs", pushKey: undefined, tab: "home", store: "Stop & Shop", typing: false, loaded: false, gate: false, err: "", lastSync: 0};
 var me = {name: ls("pfk_name") || "", pin: ls("pfk_pin") || ""};
 
-var P={home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',cart:'<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h3l2.4 11.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.7L20.5 8H6.2"/>',cook:'<path d="M5 10h14v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 10h18M9 6.5c0-1.6 1-1.6 1-3.2M14 6.5c0-1.6 1-1.6 1-3.2"/>',pantry:'<rect x="6.5" y="3" width="11" height="3" rx="1"/><path d="M7.5 6v14a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V6M7.5 11h9"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 1 2-2h13v3H6a2 2 0 0 1-2-1zM9 7h6"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',send:'<path d="M4 12L20 4l-6 16-3-7z"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'};
+var P={cal:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',plus:'<path d="M12 5v14M5 12h14"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',back:'<path d="M15 5l-7 7 7 7"/>',cam:'<path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',cup:'<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3.5c0 1-1 1.5-1 2.5M12 3.5c0 1-1 1.5-1 2.5"/>',home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',cart:'<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h3l2.4 11.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.7L20.5 8H6.2"/>',cook:'<path d="M5 10h14v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 10h18M9 6.5c0-1.6 1-1.6 1-3.2M14 6.5c0-1.6 1-1.6 1-3.2"/>',pantry:'<rect x="6.5" y="3" width="11" height="3" rx="1"/><path d="M7.5 6v14a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V6M7.5 11h9"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 1 2-2h13v3H6a2 2 0 0 1-2-1zM9 7h6"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',send:'<path d="M4 12L20 4l-6 16-3-7z"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'};
 function ic(n,c){return '<svg class="'+(c||'i')+'" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>';}
 /* ---------- small utils ---------- */
 function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -47,7 +47,7 @@ function thumb(c, name) {
   return '<div class="thumb" style="background-image:url(img/c/' + esc(c || "pantry") + '.jpg)" aria-hidden="true">' +
     (u ? '<img src="' + esc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:inherit;display:block" onerror="this.remove()">' : "") + "</div>";
 }
-function recImg(r) { return r.img ? "img/r/" + r.img + ".jpg" : "img/meals.jpg"; }
+function recImg(r) { if (r.img && /^https?:/.test(r.img)) return r.img; var ph = Array.isArray(r.photos) ? r.photos : safeParse(r.photos, []); if (ph.length && ph[0].u) return ph[0].u; return r.img ? "img/r/" + r.img + ".jpg" : "img/meals.jpg"; }
 
 /* ---------- sync with the sheet ---------- */
 var pending = 0, chain = Promise.resolve(), lastJSON = "", polling = false;
@@ -67,7 +67,8 @@ function enqueue(body) {
 function applyAll(data) {
   var j = JSON.stringify(data);
   TABS.forEach(function (t) { D[t] = (data[t] || []).slice(); });
-  D.recipes.forEach(function (r) { r.ings = Array.isArray(r.ings) ? r.ings : safeParse(r.ings, []); });
+  D.recipes.forEach(function (r) { ["ings", "steps", "loves", "notes", "photos"].forEach(function (f) { r[f] = Array.isArray(r[f]) ? r[f] : safeParse(r[f], []); }); });
+  D.coffee.forEach(function (c) { ["ings", "steps", "tweaks"].forEach(function (f) { c[f] = Array.isArray(c[f]) ? c[f] : safeParse(c[f], []); }); c.stars = c.stars && typeof c.stars === "object" ? c.stars : safeParse(c.stars, {}); });
   st.loaded = true; st.lastSync = Date.now(); st.err = ""; checkPushDone();
   if (j !== lastJSON) { lastJSON = j; render(); if (st.pushOpen && !$("sheet").hidden) $("sheetBody").innerHTML = pushHtml(); else if (st.toolOpen && !$("sheet").hidden) $("sheetBody").innerHTML = toolHtml(st.toolOpen); } else setStatus();
 }
@@ -87,11 +88,11 @@ function put(tab, id, data) {
   var o = byId(D[tab], id);
   if (o) Object.keys(data).forEach(function (k) { o[k] = data[k]; }); else { o = {id: id}; Object.keys(data).forEach(function (k) { o[k] = data[k]; }); D[tab].push(o); }
   var send = {}; Object.keys(data).forEach(function (k) { send[k] = data[k]; });
-  if (tab === "recipes" && Array.isArray(send.ings)) send.ings = JSON.stringify(send.ings);
+  if (tab === "recipes" || tab === "coffee") Object.keys(send).forEach(function (k) { if (send[k] && typeof send[k] === "object") send[k] = JSON.stringify(send[k]); });
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v20";
+var BUILD = "v21";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -441,16 +442,16 @@ function liaAnswer(q) {
   q = (q || "").toLowerCase();
   var m = q.match(/^\s*(?:add|need|get)\s+(.+)$/);
   if (m) { var p = parseAdd(q); p.items.forEach(function (n) { addByName(n, p.store); }); return "Done. I put " + esc(p.items.join(", ")) + " on your " + esc(p.store) + " list."; }
-  var t = tonight(); if (!t.length) return "I do not have any bangers saved yet. Add a few on the Bangers tab and I can start suggesting dinners.";
+  var t = tonight(); if (!t.length) return "I do not have any recipes saved yet. Add a few to the Recipe Book and I can start suggesting dinners.";
   return "Here is what I would cook, based on what you have and what has not been made in a while:" + t.map(miniRec).join("");
 }
 function cook() {
   liaLoad();
   var h = '<div class="lhero"><div class="lia"><img class="a" src="img/lia/lia.png" alt="Lia, your cooking buddy"><img class="b" src="img/lia/lia-b.png" alt=""></div><div class="say">Hi' + (me.name ? " " + esc(me.name) : "") + ', I&rsquo;m Lia. Hungry?<small>Ask me anything about dinner.</small></div></div><div class="chat">';
-  if (!st.chat.length) h += '<div class="aiRow">' + face() + '<div class="msg ai">Tap one to start, or tap the mic and talk.<div class="opts"><button class="opt fill" data-act="liaask" data-q="What can we cook tonight?">What can we cook tonight?</button><button class="opt" data-act="tool" data-v="sales">Check sales</button><button class="opt" data-act="tool" data-v="times">Check times</button><button class="opt" data-act="tab" data-v="recipes">Open Bangers</button></div></div></div>';
+  if (!st.chat.length) h += '<div class="aiRow">' + face() + '<div class="msg ai">Tap one to start, or tap the mic and talk.<div class="opts"><button class="opt fill" data-act="liaask" data-q="What can we cook tonight?">What can we cook tonight?</button><button class="opt" data-act="tool" data-v="sales">Check sales</button><button class="opt" data-act="tool" data-v="times">Check times</button><button class="opt" data-act="liasnap">Snap a recipe</button><button class="opt" data-act="tab" data-v="recipes">Open Recipe Book</button></div></div></div>';
   else h += '<div class="newchat"><button class="linkbtn" data-act="newchat">New chat</button></div>';
-  st.chat.forEach(function (c) { h += c.who === "me" ? '<div class="msg me">' + esc(c.t) + "</div>" : '<div class="aiRow">' + face() + '<div class="msg ai">' + c.t + "</div></div>"; });
-  return h + '</div><div class="sugg" id="suggL"></div><div class="bar2"><input type="text" id="liain" placeholder="Ask Lia, or say: add butter" aria-label="Ask Lia" autocomplete="off" enterkeyhint="send"><button class="round mic3" data-act="liamic" aria-label="Talk to Lia">' + ic("mic", "") + '</button><button class="round send" data-act="liasend" aria-label="Send">' + ic("send", "") + "</button></div>";
+  st.chat.forEach(function (c) { h += c.who === "me" ? '<div class="msg me">' + (c.img ? '<img class="snapimg" src="' + c.img + '" alt="Your photo">' : esc(c.t)) + "</div>" : '<div class="aiRow">' + face() + '<div class="msg ai">' + c.t + "</div></div>"; });
+  return h + '</div><div class="sugg" id="suggL"></div><div class="bar2"><input type="text" id="liain" placeholder="Ask Lia, or say: add butter" aria-label="Ask Lia" autocomplete="off" enterkeyhint="send"><button class="round cam3" data-act="liasnap" aria-label="Snap a recipe">' + ic("cam", "") + '</button><button class="round mic3" data-act="liamic" aria-label="Talk to Lia">' + ic("mic", "") + '</button><button class="round send" data-act="liasend" aria-label="Send">' + ic("send", "") + "</button></div>";
 }
 var liaBusy = false;
 function liaKey() { return "lia_" + String(me.name || "family").toLowerCase().replace(/[^a-z0-9]/g, ""); }
@@ -478,7 +479,7 @@ function liaApply(o) {
   (o.cooked || []).forEach(function (id) { var r = byId(D.recipes, id); if (r) { var ml = meals(); ml[id] = today(); put("settings", "meallog", {value: JSON.stringify(ml)}); done.push("Logged " + r.name + " as made today"); } });
   if (o.tool === "times" || o.tool === "sales") { put("settings", "pushreq", {value: Date.now() + "|" + o.tool}); html += '<div class="opts"><button class="opt fill" data-act="toolshow" data-v="' + o.tool + '">Show answer</button></div>'; }
   if (o.gear) { var g = byId(D.settings, "gear"), v = (g ? String(g.value || "") + "\n" : "") + String(o.gear).slice(0, 300); put("settings", "gear", {value: v.slice(-4000)}); done.push("Remembered that"); }
-  if (o.banger && o.banger.name) { put("recipes", null, {name: String(o.banger.name).slice(0, 80), img: "", serves: 8, ings: (o.banger.ings || []).slice(0, 40).map(function (i) { return {n: String(i.n || ""), q: String(i.q || "")}; }), note: String(o.banger.note || "").slice(0, 500), addedBy: me.name, kind: "banger"}); done.push("Saved " + o.banger.name + " to Bangers"); }
+  if (o.banger && o.banger.name) { var bg = cleanRecipe(o.banger); put("recipes", null, {name: bg.name, cat: bg.cat, prep: bg.prep, cook: bg.cook, img: "", serves: bg.serves, ings: bg.ings, steps: bg.steps, note: bg.note, addedBy: me.name, kind: "banger", loves: [], notes: [], photos: []}); done.push("Saved " + bg.name + " to Ojazel's Recipe Book"); }
   (o.show || []).slice(0, 3).forEach(function (id) { var r = byId(D.recipes, id); if (r) { var ig = recipeIngs(r), need = ig.filter(function (x) { return x.s === "need"; }).length; html += miniRec({r: r, has: ig.length > 0, need: need}); } });
   if (done.length) html += '<div class="made" style="margin-top:8px">' + done.map(esc).join(" &middot; ") + "</div>";
   return html;
@@ -511,45 +512,79 @@ function voteMini() {
   var tr = top ? byId(D.recipes, top) : null;
   return '<div class="card"><div class="vmini"><div class="grow"><h3>Dinner vote</h3><div class="sub" style="margin-top:3px">' + (tr ? esc(tr.name) + " is leading with " + counts[top] + " vote" + (counts[top] === 1 ? "" : "s") : "No votes yet today") + '</div></div><button class="btn sm" data-act="votes">Vote</button></div></div>';
 }
-/* ---------- meal planner ---------- */
+/* ---------- meal calendar (weeks start Sunday; Ifoma and Hazel plan, everyone else votes and suggests) ---------- */
 var SLOTS = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"], ["s", "Snack"]];
 var QUICK = {b: ["Pancakes", "Waffles", "Eggs and toast", "Cereal", "Oatmeal"], l: ["Sandwiches", "Leftovers", "Mac and cheese", "Chicken nuggets"], d: ["Leftovers", "Takeout"], s: ["Fruit", "Crackers and cheese", "Yogurt", "Popcorn"]};
+var DAY3 = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+var PARENTS = {ifoma: 1, hazel: 1};
+function canPlan() { return !!PARENTS[String(me.name || "").toLowerCase()]; }
+function isOji() { return String(me.name || "").toLowerCase() === "ifoma"; }
 function dkey(d) { return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
-function weekDays(off) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 7 * (off || 0)); var a = []; for (var i = 0; i < 7; i++) { var x = new Date(d); x.setDate(d.getDate() + i); a.push(x); } return a; }
+function kdate(k) { k = Number(k); return new Date(Math.floor(k / 10000), Math.floor(k / 100) % 100 - 1, k % 100, 12); }
+function weekDays(off) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - d.getDay() + 7 * (off || 0)); var a = []; for (var i = 0; i < 7; i++) { var x = new Date(d); x.setDate(d.getDate() + i); a.push(x); } return a; }
 function planAll() { var r = byId(D.settings, "mealplan"); return r ? safeParse(r.value, {}) : {}; }
 function planSave(p) { var cut = dkey(new Date(Date.now() - 21 * 864e5)); Object.keys(p).forEach(function (k) { if (Number(k) < cut) delete p[k]; }); put("settings", "mealplan", {value: JSON.stringify(p)}); }
 function slotName(e) { if (!e) return ""; if (e.r) { var r = byId(D.recipes, e.r); return r ? r.name : (e.t || "Recipe"); } return e.t || ""; }
+function slotRec(e) { return e && e.r ? byId(D.recipes, e.r) : null; }
+function avatar(n) { var cols = {ifoma: "#2f5a3d", hazel: "#c4694a", josh: "#2b6cb0", kayley: "#a8741a", joel: "#7a4f9a", celeste: "#3f8f8a", lia: "#9a8f80"}, k = String(n || "?").toLowerCase(); return '<span class="av" style="background:' + (cols[k] || "#8a7f70") + '" title="' + esc(n) + '">' + esc(String(n || "?").charAt(0).toUpperCase()) + "</span>"; }
+function curDay() { var days = weekDays(st.wk || 0), tk = dkey(new Date()); if (st.pday == null) { st.pday = 0; days.forEach(function (d, i) { if (dkey(d) === tk) st.pday = i; }); } return st.pday; }
+function weekStrip(sel, act) {
+  var days = weekDays(st.wk || 0), p = planAll(), tk = dkey(new Date());
+  return '<div class="strip">' + days.map(function (d, i) { var k = dkey(d), e = (p[k] || {}).d, r = slotRec(e);
+    var pic = r ? '<i style="background-image:url(' + esc(recImg(r)) + ')"></i>' : (e ? '<i class="txt">' + esc(slotName(e).charAt(0)) + "</i>" : '<i class="empty"></i>');
+    return '<button class="dy' + (k === tk ? " today" : "") + '" data-act="' + (act || "pday") + '" data-v="' + i + '" aria-pressed="' + (sel === i) + '" aria-label="' + esc(DAYS[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate() + (e ? ", dinner " + slotName(e) : ", nothing planned")) + '"><small>' + (k === tk ? "Today" : DAY3[d.getDay()]) + "</small><b>" + d.getDate() + "</b>" + pic + "</button>"; }).join("") + "</div>";
+}
+function weekRange(off) { var d = weekDays(off); return MON[d[0].getMonth()] + " " + d[0].getDate() + " to " + (d[6].getMonth() !== d[0].getMonth() ? MON[d[6].getMonth()] + " " : "") + d[6].getDate(); }
+function weekCard() {
+  var keep = st.wk; st.wk = 0;
+  var p = planAll(), tk = dkey(new Date()), e = (p[tk] || {}).d, r = slotRec(e), h;
+  h = '<div class="card"><div class="row"><div class="grow"><h3>This week</h3><div class="sub">' + weekRange(0) + ' &middot; tap a day</div></div><button class="iconbtn" data-act="tab" data-v="plan" aria-label="Open the meal calendar">' + ic("cal", "") + "</button></div>" + weekStrip(-1, "hday");
+  if (e) h += '<button class="tonight" data-act="hday" data-v="' + curTodayIdx() + '"><span class="ph" style="background-image:url(' + esc(r ? recImg(r) : "img/meals.jpg") + ')"></span><span class="grow"><span class="kick">Tonight</span><b>' + esc(slotName(e)) + '</b><span class="who">' + (e.by ? avatar(e.by) + " planned by " + esc(e.by) : (e.s ? avatar("Lia") + " Lia suggests" : "")) + (r && (Number(r.prep) || Number(r.cook)) ? " &middot; " + ((Number(r.prep) || 0) + (Number(r.cook) || 0)) + " min" : "") + "</span></span></button>";
+  else h += '<p class="sub" style="margin:10px 0 0">Nothing planned for tonight.' + (canPlan() ? ' <button class="linkbtn" data-act="tab" data-v="plan" style="padding:0;min-height:0">Plan the week</button>' : "") + "</p>";
+  st.wk = keep; return h + "</div>";
+}
+function curTodayIdx() { return new Date().getDay(); }
 function plan() {
-  var off = st.wk || 0, days = weekDays(off), p = planAll(), tk = dkey(new Date()), sug = 0, any = 0;
-  var h = pageTop("Meal plan", esc(fmtDay(days[0].getTime()) + " to " + fmtDay(days[6].getTime())));
-  h += '<div class="seg2" role="group"><button data-act="wk" data-v="0" aria-pressed="' + (off === 0) + '">This week</button><button data-act="wk" data-v="1" aria-pressed="' + (off === 1) + '">Next week</button></div>';
-  var body = days.map(function (d) {
-    var k = dkey(d), day = p[k] || {}, rows = SLOTS.map(function (sl) { var e = day[sl[0]]; if (e) { any++; if (e.s) sug++; }
-      return '<button class="pslot" data-act="pslot" data-id="' + k + "|" + sl[0] + '"><span class="pl">' + sl[1] + '</span><span class="grow">' + (e ? "<b>" + esc(slotName(e)) + "</b>" : '<span class="sub">Tap to add</span>') + "</span>" + (e && e.s ? '<span class="chip">Lia suggests</span>' : "") + "</button>"; }).join("");
-    return '<div class="card pday' + (k === tk ? " today" : "") + '"><h3>' + DAYS[d.getDay()] + ' <span class="sub">' + esc(MON[d.getMonth()] + " " + d.getDate()) + "</span></h3>" + rows + "</div>";
-  }).join("");
-  h += '<div class="card"><button class="big" data-act="pauto">Lia, fill my week</button><div class="row" style="margin-top:8px;gap:8px">' + (sug ? '<button class="btn sm" data-act="pokall">Approve all (' + sug + ")</button>" : "") + '<button class="btn sm" data-act="pgroc"' + (any ? "" : " disabled") + '>Groceries for this week</button>' + (any ? '<button class="linkbtn" data-act="pclearwk">Clear week</button>' : "") + '</div><div class="sub" style="margin-top:6px">Lia fills the empty spots from your recipes and what you made least recently. Tap any spot to swap it. Nothing goes on your Needs list until you tap Groceries and approve.</div></div>';
-  return h + body + '<button class="linkbtn" data-act="tab" data-v="home" style="display:block;margin:10px auto">Back to Home</button>';
+  var off = st.wk || 0, days = weekDays(off), p = planAll(), sel = curDay(), d = days[sel], k = dkey(d), day = p[k] || {}, e = day.d, r = slotRec(e), tk = dkey(new Date()), sug = 0, any = 0, h;
+  days.forEach(function (x) { var dd = p[dkey(x)] || {}; SLOTS.forEach(function (sl) { if (dd[sl[0]]) { any++; if (dd[sl[0]].s) sug++; } }); });
+  h = '<div class="top"><div class="grow"><small>Meal Calendar</small><h1>' + (off ? "Next week" : "This week") + "</h1></div></div>";
+  h += '<div class="seg2" role="group"><button data-act="wk" data-v="0" aria-pressed="' + (off === 0) + '">' + weekRange(0) + '</button><button data-act="wk" data-v="1" aria-pressed="' + (off === 1) + '">' + weekRange(1) + "</button></div>";
+  h += weekStrip(sel);
+  if (e) {
+    h += '<div class="dinner"><div class="ph" style="background-image:url(' + esc(r ? recImg(r) : "img/meals.jpg") + ')"><div class="cap"><small>' + DAYS[d.getDay()] + " dinner" + (e.s ? " &middot; Lia suggests" : "") + "</small><h2>" + esc(slotName(e)) + "</h2></div></div>" +
+      '<div class="act"><span class="who grow">' + (e.s ? avatar("Lia") + " Lia picked this &middot; not approved yet" : e.by ? avatar(e.by) + " planned by " + esc(e.by) : "") + "</span></div>" +
+      '<div class="act" style="padding-top:0">' + (r ? '<button class="btn sm" data-act="recipe" data-id="' + esc(r.id) + '">See recipe</button>' : "") +
+      (canPlan() ? (e.s ? '<button class="btn sm okb" data-act="pok" data-id="' + k + '|d">Approve</button>' : "") + '<button class="btn sm ghost" data-act="pslot" data-id="' + k + '|d">Swap</button>' : '<button class="btn sm ghost" data-act="votes">Vote / suggest</button>') +
+      (k <= tk && r ? '<button class="btn sm ghost" data-act="made" data-id="' + esc(r.id) + '">We made it</button>' : "") + "</div></div>";
+  } else {
+    h += '<div class="card dempty"><h3>' + DAYS[d.getDay()] + " dinner</h3>" + (canPlan() ? '<p class="sub">Nothing planned yet.</p><button class="btn" data-act="pslot" data-id="' + k + '|d">Pick dinner</button>' : '<p class="sub">Nothing planned yet. Vote or suggest something.</p><button class="btn ghost" data-act="votes">Vote / suggest</button>') + "</div>";
+  }
+  h += '<div class="card slots">' + SLOTS.filter(function (sl) { return sl[0] !== "d"; }).map(function (sl) { var x = day[sl[0]], xr = slotRec(x);
+    return '<button class="slot" data-act="' + (canPlan() ? "pslot" : "votes") + '" data-id="' + k + "|" + sl[0] + '"><span class="lb">' + sl[1] + "</span>" + (xr ? '<span class="th" style="background-image:url(' + esc(recImg(xr)) + ')"></span>' : "") + '<span class="grow">' + (x ? "<b>" + esc(slotName(x)) + "</b>" + (x.s ? ' <span class="chip">Lia suggests</span>' : "") : '<span class="sub">' + (canPlan() ? "Tap to add" : "Nothing yet") + "</span>") + "</span></button>"; }).join("") + "</div>";
+  if (canPlan()) h += '<div class="card"><button class="big" data-act="pauto">Lia, fill the empty spots</button>' + (sug ? '<button class="big alt" data-act="pokall">Approve all Lia picks (' + sug + ")</button>" : "") + '<button class="big alt" data-act="pgroc"' + (any ? "" : " disabled") + ">Groceries for this week</button>" + '<div class="sub" style="margin-top:8px">Only what we are missing goes to Needs, with our usual Stop &amp; Shop brands. Nothing goes to the cart until you Push.</div>' + (any ? '<button class="linkbtn" data-act="pclearwk" style="display:block;margin:6px auto 0">Clear this week</button>' : "") + "</div>";
+  else h += '<div class="lock">' + ic("lock", "") + "Oji and Hazel set the calendar. You can vote and suggest meals.</div>";
+  return h;
 }
 function pickList() {
   var box = $("pl"); if (!box) return; var qe = $("pq"), q = qe ? qe.value.toLowerCase().trim() : "", ml = meals();
   var rs = D.recipes.filter(function (r) { return !q || String(r.name).toLowerCase().indexOf(q) > -1; }).sort(function (a, b) { return (ml[a.id] || 0) - (ml[b.id] || 0); });
-  box.innerHTML = rs.map(function (r) { return '<button class="item" data-act="ppick" data-id="' + esc(r.id) + '" style="width:100%;text-align:left"><div class="pic2" style="width:36px;height:36px;border-radius:8px;background:url(' + recImg(r) + ') center/cover"></div><div class="grow"><b>' + esc(r.name) + "</b>" + (ml[r.id] ? '<div class="sub">Last made ' + esc(fmtDay(new Date(Math.floor(ml[r.id] / 10000), Math.floor(ml[r.id] / 100) % 100 - 1, ml[r.id] % 100, 12).getTime())) + "</div>" : '<div class="sub">Not made yet</div>') + "</div></button>"; }).join("") || '<p class="empty">No recipes match. Type a name below instead.</p>';
+  box.innerHTML = rs.map(function (r) { return '<button class="item" data-act="ppick" data-id="' + esc(r.id) + '" style="width:100%;text-align:left"><div class="pic2" style="width:40px;height:40px;border-radius:10px;background:url(' + esc(recImg(r)) + ') center/cover"></div><div class="grow"><b>' + esc(r.name) + '</b><div class="sub">' + (rLoves(r).length ? rLoves(r).length + " love it &middot; " : "") + (ml[r.id] ? "last made " + esc(fmtDay(kdate(ml[r.id]).getTime())) : "not made yet") + "</div></div></button>"; }).join("") || '<p class="empty">No recipes match. Type a name below instead.</p>';
 }
 function pickSheet(id) {
-  var pr = id.split("|"), k = pr[0], sl = pr[1], dt = new Date(Math.floor(k / 10000), Math.floor(k / 100) % 100 - 1, k % 100, 12), e = (planAll()[k] || {})[sl], nm = SLOTS.filter(function (x) { return x[0] === sl; })[0][1];
+  if (!canPlan()) { st.voteOpen = true; sheet(voteCard() + '<button class="big alt" data-act="close">Close</button>'); return; }
+  var pr = id.split("|"), k = pr[0], sl = pr[1], dt = kdate(k), e = (planAll()[k] || {})[sl], nm = SLOTS.filter(function (x) { return x[0] === sl; })[0][1];
   st.pslot = id;
-  sheet('<h3 id="shT">' + nm + " &middot; " + esc(DAYS[dt.getDay()] + " " + MON[dt.getMonth()] + " " + dt.getDate()) + "</h3>" + (e ? '<p class="sub">Now: <b>' + esc(slotName(e)) + "</b></p>" + (e.s ? '<button class="btn sm" data-act="pok">Looks good</button> ' : "") + '<button class="linkbtn" data-act="pclear">Clear this spot</button>' : "") +
+  sheet('<h3 id="shT">' + nm + " &middot; " + esc(DAYS[dt.getDay()] + " " + MON[dt.getMonth()] + " " + dt.getDate()) + "</h3>" + (e ? '<p class="sub">Now: <b>' + esc(slotName(e)) + "</b></p>" + (e.s ? '<button class="btn sm" data-act="pok" data-id="' + esc(id) + '">Looks good</button> ' : "") + '<button class="linkbtn" data-act="pclear">Clear this spot</button>' : "") +
     '<div class="sub" style="margin:10px 0 4px">Quick picks</div><div class="opts">' + QUICK[sl].map(function (q) { return '<button class="opt" data-act="pquick" data-v="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") + "</div>" +
-    '<div class="sub" style="margin:10px 0 4px">Your recipes</div><input type="text" id="pq" placeholder="Search recipes" autocomplete="off" aria-label="Search recipes"><div id="pl" style="max-height:34vh;overflow:auto;margin-top:6px"></div>' +
+    '<div class="sub" style="margin:10px 0 4px">From Ojazel&rsquo;s Recipe Book</div><input type="text" id="pq" placeholder="Search recipes" autocomplete="off" aria-label="Search recipes"><div id="pl" style="max-height:34vh;overflow:auto;margin-top:6px"></div>' +
     '<div class="sub" style="margin:10px 0 4px">Or type something</div><div class="ask"><div class="grow"><input type="text" id="pt" placeholder="e.g. Jerk chicken" autocomplete="off" aria-label="Meal"></div><button class="btn" data-act="pfree">Add</button></div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>'); pickList();
 }
-function setSlot(id, e) { var pr = id.split("|"), p = planAll(); p[pr[0]] = p[pr[0]] || {}; if (e) p[pr[0]][pr[1]] = e; else delete p[pr[0]][pr[1]]; planSave(p); }
+function setSlot(id, e) { var pr = id.split("|"), p = planAll(); p[pr[0]] = p[pr[0]] || {}; if (e) { if (!e.s) e.by = me.name || ""; p[pr[0]][pr[1]] = e; } else delete p[pr[0]][pr[1]]; planSave(p); }
 function planAuto() {
   var off = st.wk || 0, days = weekDays(off), p = planAll(), tk = dkey(new Date()), ml = meals(), used = {}, n = 0;
   days.forEach(function (d) { var e = (p[dkey(d)] || {}).d; if (e && e.r) used[e.r] = 1; });
-  var rs = D.recipes.map(function (r) { var ig = recipeIngs(r), need = ig.filter(function (x) { return x.s === "need"; }).length; return {r: r, has: ig.length > 0, need: need, last: ml[r.id] || 0}; });
-  rs.sort(function (x, y) { return x.last - y.last || (x.has ? 0 : 1) - (y.has ? 0 : 1) || x.need - y.need; });
+  var rs = D.recipes.filter(function (r) { return rCat(r) !== "Breakfast" && rCat(r) !== "Desserts"; }).map(function (r) { var ig = recipeIngs(r), need = ig.filter(function (x) { return x.s === "need"; }).length; return {r: r, has: ig.length > 0, need: need, last: ml[r.id] || 0, love: rLoves(r).length}; });
+  rs.sort(function (x, y) { return x.last - y.last || y.love - x.love || (x.has ? 0 : 1) - (y.has ? 0 : 1) || x.need - y.need; });
   days.forEach(function (d, di) {
     var k = dkey(d); if (k < tk) return; p[k] = p[k] || {};
     SLOTS.forEach(function (sl) {
@@ -569,10 +604,148 @@ function groceryItems() {
   }); });
   return {items: out, noList: noList.filter(function (v, i, a) { return a.indexOf(v) === i; })};
 }
-function planToday() {
-  var p = planAll(), day = p[dkey(new Date())] || {}, rows = SLOTS.filter(function (sl) { return day[sl[0]]; }).map(function (sl) { return '<div class="ing"><span><span class="sub">' + sl[1] + "</span> " + esc(slotName(day[sl[0]])) + "</span>" + (sl[0] === "d" && day.d.r ? '<button class="btn sm" data-act="pmade" data-id="' + esc(day.d.r) + '">Made it</button>' : "") + "</div>"; }).join("");
-  return '<div class="card"><div class="row"><h3 class="grow">Meal plan</h3><button class="btn sm" data-act="tab" data-v="plan">' + (rows ? "Open" : "Plan the week") + "</button></div>" + (rows || '<p class="sub" style="margin:6px 0 0">Nothing planned for today. Let Lia fill the week.</p>') + "</div>";
+function planToday() { return ""; }
+
+/* ---------- Ojazel's Recipe Book ---------- */
+var RCATS = ["Dinners", "Quick", "Breakfast", "Trini Classics", "Weekend", "Sides", "Desserts", "Snacks"];
+function arr(v, d) { return Array.isArray(v) ? v : safeParse(v, d || []); }
+function rLoves(r) { return arr(r.loves); }
+function rPhotos(r) { return arr(r.photos); }
+function rCat(r) { if (r.cat) return r.cat; return /pancake|waffle|egg|breakfast|oatmeal|french toast/i.test(r.name) ? "Breakfast" : /hot ?dog|burger|nugget|sandwich/i.test(r.name) ? "Quick" : "Dinners"; }
+function rTime(r) { var t = (Number(r.prep) || 0) + (Number(r.cook) || 0); return t ? t + " min" : ""; }
+function rec() {
+  var q = st.rq || "", ml = meals(), cat = st.rcat || "All";
+  var all = D.recipes.slice(), bang = all.slice().sort(function (a, b) { return rLoves(b).length - rLoves(a).length || (ml[b.id] || 0) - (ml[a.id] || 0); }).slice(0, 6);
+  var loved = bang.some(function (r) { return rLoves(r).length; });
+  var cats = ["All"].concat(RCATS.filter(function (c) { return all.some(function (r) { return rCat(r) === c; }); }));
+  var h = '<div class="top"><div class="grow"><small>Pierre Family Kitchen</small><h1>Ojazel&rsquo;s Recipe Book</h1></div><button class="iconbtn" data-act="tab" data-v="plan" aria-label="Meal calendar">' + ic("cal", "") + '</button><button class="iconbtn" data-act="addrec" aria-label="Add a recipe">' + ic("plus", "") + "</button></div>" +
+    '<div class="search">' + ic("search", "") + '<input type="text" id="rq" placeholder="Search ' + all.length + ' recipes" autocomplete="off" aria-label="Search recipes" value="' + esc(q) + '"></div><div id="rbody">' + recBody() + "</div>";
+  return h;
 }
+function recBody() {
+  var q = (st.rq || "").toLowerCase().trim(), ml = meals(), cat = st.rcat || "All", all = D.recipes.slice(), h = "";
+  if (!q) {
+    var bang = all.slice().sort(function (a, b) { return rLoves(b).length - rLoves(a).length || (ml[b.id] || 0) - (ml[a.id] || 0); }).slice(0, 6), loved = bang.some(function (r) { return rLoves(r).length; });
+    if (bang.length) h += '<div class="h2">Bangers <span class="sub">' + (loved ? "most-loved in the house" : "tap Love it on a recipe to rank them here") + '</span></div><div class="shelf">' + bang.map(function (r) { var n = rLoves(r).length; return '<button class="bcard" data-act="recipe" data-id="' + esc(r.id) + '" style="background-image:url(' + esc(recImg(r)) + ')"><span class="t"><b>' + esc(r.name) + "</b><span>" + (n ? HEART + " " + n + " love it" : esc(rCat(r))) + "</span></span></button>"; }).join("") + "</div>";
+  }
+  var cats = ["All"].concat(RCATS.filter(function (c) { return all.some(function (r) { return rCat(r) === c; }); }));
+  var list = all.filter(function (r) { return (cat === "All" || rCat(r) === cat) && (!q || (r.name + " " + rCat(r) + " " + arr(r.ings).map(function (i) { return i.n; }).join(" ")).toLowerCase().indexOf(q) > -1); });
+  h += '<div class="h2">' + (q ? "Results" : "All recipes") + '</div><div class="cats">' + cats.map(function (c) { return '<button data-act="rcat" data-v="' + esc(c) + '" aria-pressed="' + (cat === c) + '">' + esc(c) + "</button>"; }).join("") + "</div>";
+  h += list.length ? '<div class="grid2">' + list.map(function (r) { var ig = recipeIngs(r), n = ig.filter(function (x) { return x.s === "need"; }).length; return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + esc(recImg(r)) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + '<div class="sub">' + [rTime(r), ig.length ? (n ? n + " to buy" : "have it all") : (r.kind === "suggested" ? "suggested by " + esc(r.addedBy || "family") : "")].filter(Boolean).join(" &middot; ") + "</div></div></button>"; }).join("") + "</div>" : '<p class="empty">No recipes match.</p>';
+  if (!q) h += '<div class="h2" style="margin-top:22px">Also in the kitchen</div><button class="ckb" data-act="tab" data-v="coffee" style="background-image:url(img/coffee.jpg)"><span class="t"><small>Kayley&rsquo;s drinks</small><b>Coffee Korner</b><span>' + D.coffee.length + " drink" + (D.coffee.length === 1 ? "" : "s") + " &middot; supplies</span></span></button>";
+  return h;
+}
+var HEART = '<svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.3 3 4.5 6.7 4.5c2.2 0 3.6 1.3 5.3 3.2 1.7-1.9 3.1-3.2 5.3-3.2 3.7 0 5.8 3.8 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>';
+function scaleQ(q, f) {
+  if (!q || f === 1) return q;
+  return String(q).replace(/^(\d+(?:\.\d+)?)(?:\s*(?:-|to)\s*(\d+(?:\.\d+)?))?(?:\s+(\d)\/(\d))?|^(\d)\/(\d)/, function (m, a, b, n1, d1, n2, d2) {
+    var v = a ? Number(a) + (n1 ? Number(n1) / Number(d1) : 0) : Number(n2) / Number(d2);
+    var fmt = function (x) { x = Math.round(x * f * 4) / 4; var w = Math.floor(x), fr = x - w, s = fr === 0.25 ? "1/4" : fr === 0.5 ? "1/2" : fr === 0.75 ? "3/4" : ""; return (w ? String(w) : "") + (w && s ? " " : "") + (s || (w ? "" : "0")); };
+    return fmt(v) + (b ? " to " + fmt(Number(b)) : "");
+  });
+}
+function rdetail() {
+  var r = byId(D.recipes, st.rid); if (!r) { st.tab = "recipes"; return rec(); }
+  var base = Number(r.serves) || 8, sv = st.rsv || base, f = sv / base, ig = recipeIngs(r), need = ig.filter(function (x) { return x.s === "need"; }), steps = arr(r.steps), notes = arr(r.notes), photos = rPhotos(r), loves = rLoves(r), mine = loves.indexOf(me.name) > -1, ml = meals();
+  var tag = {have: '<span class="chip ok">Have</span>', check: '<span class="chip info">Check</span>', need: '<span class="chip warn">Need</span>'};
+  var h = '<div class="rd"><div class="rhero" style="background-image:url(' + esc(recImg(r)) + ')"><button class="back" data-act="rback" aria-label="Back">' + ic("back", "") + "</button><span>" + esc(rCat(r)) + "</span></div>" +
+    "<h1>" + esc(r.name) + "</h1>" + (r.note ? '<div class="sub">' + esc(r.note) + "</div>" : "") +
+    '<div class="row" style="margin-top:8px"><div class="avs">' + loves.map(avatar).join("") + '</div><div class="sub grow">' + (loves.length ? loves.length + " love it" : "Be the first to love it") + '</div><button class="btn sm ' + (mine ? "" : "ghost") + '" data-act="love" aria-pressed="' + mine + '">' + (mine ? "Loved" : "Love it") + "</button></div>" +
+    '<div class="facts"><div class="fact"><small>Prep</small><b>' + (Number(r.prep) ? r.prep + " min" : "&ndash;") + '</b></div><div class="fact"><small>Cook</small><b>' + (Number(r.cook) ? r.cook + " min" : "&ndash;") + '</b></div><div class="fact"><small>Feeds</small><b>' + sv + '</b><div class="scale">' + [4, 8, 12].map(function (n) { return '<button data-act="rsv" data-v="' + n + '" aria-pressed="' + (sv === n) + '">' + n + "</button>"; }).join("") + "</div></div></div>";
+  h += '<div class="card"><h3>Ingredients</h3>' + (ig.length ? ig.map(function (x) { var c = catalogMatch(x.n); return '<div class="ing"><span class="q">' + esc(scaleQ(x.q, f)) + '</span><span class="grow">' + esc(x.n) + (c ? '<span class="u">Usually ' + esc(c.brand || c.name) + "</span>" : "") + "</span>" + tag[x.s] + "</div>"; }).join("") +
+    (need.length ? '<button class="big" data-act="addneed" data-id="' + esc(r.id) + '">Add ' + need.length + " missing to " + esc(st.store) + " Needs</button>" : '<p class="sub" style="margin:8px 0 0">We have everything.</p>') : '<p class="sub">No ingredient list yet. Snap the recipe in Ask Lia and she fills it in.</p>') + "</div>";
+  if (steps.length) h += '<div class="card"><h3>Steps</h3><ol class="steps">' + steps.map(function (s) { return "<li><span>" + esc(s) + "</span></li>"; }).join("") + "</ol></div>";
+  h += '<div class="card"><div class="row"><h3 class="grow">Family notes</h3><button class="btn sm ghost" data-act="addnote">Add a note</button></div>' + (notes.length ? notes.map(function (n) { return '<div class="note"><b>' + esc(n.by || "Family") + "</b>" + esc(n.t || "") + "</div>"; }).join("") : '<p class="sub" style="margin:8px 0 0">Tips like &ldquo;less spicy for the kids&rdquo; go here.</p>') + "</div>";
+  h += '<div class="card"><h3>When we made it</h3><div class="gal">' + photos.map(function (p) { return '<div style="background-image:url(' + esc(p.u) + ')"><small>' + esc(p.by || "") + (p.d ? (p.by ? " &middot; " : "") + esc(fmtDay(kdate(p.d).getTime())) : "") + "</small></div>"; }).join("") + '<button data-act="rphoto">' + ic("cam", "") + "Add our photo</button></div>" + '<div class="sub">' + (ml[r.id] ? "Last made " + esc(fmtDay(kdate(ml[r.id]).getTime())) : "Not made yet") + "</div></div>";
+  h += '<div class="sticky">' + (canPlan() ? '<button class="big" data-act="planit">Put on the calendar</button>' : '<button class="big" data-act="vote" data-id="' + esc(r.id) + '">Vote for tonight</button>') + "</div></div>";
+  return h;
+}
+
+/* ---------- Coffee Korner (Kayley's drinks; Oji adds and edits, everyone sees and rates) ---------- */
+var SUPDEF = ["Ground coffee", "Coffee mate Italian Sweet Creme", "International Delight Sweet & Creamy", "Sugar In The Raw", "Parrot Evaporated Milk", "Cups and lids"];
+function supList() { var r = byId(D.settings, "coffeesup"); return r ? safeParse(r.value, []) : SUPDEF.map(function (n) { return {n: n, s: "ok"}; }); }
+function supSave(l) { put("settings", "coffeesup", {value: JSON.stringify(l)}); }
+var SCHIP = {ok: '<span class="chip ok">Have</span>', low: '<span class="chip warn">Low</span>', out: '<span class="chip out">Out</span>'};
+function supFor(n) { var t = String(n || "").toLowerCase(), hit = null; supList().forEach(function (s) { var w = s.n.toLowerCase().split(/\s+/).filter(function (x) { return x.length > 3; }); if (!hit && w.some(function (x) { return t.indexOf(x) > -1; })) hit = s; }); return hit; }
+function stars(c) { var o = c.stars && typeof c.stars === "object" && !Array.isArray(c.stars) ? c.stars : safeParse(c.stars, {}); return o || {}; }
+function avgStars(c) { var o = stars(c), v = Object.keys(o).map(function (k) { return Number(o[k]) || 0; }).filter(Boolean); return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : 0; }
+function cupPic(h, u) { return u ? '<div class="pic" style="height:' + h + 'px;background-image:url(' + esc(u) + ')"></div>' : '<div class="cup" style="height:' + h + 'px">' + ic("cup", "") + "</div>"; }
+function coffee() {
+  var sl = supList(), low = sl.filter(function (x) { return x.s !== "ok"; }).length, cs = D.coffee.slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+  var h = '<button class="ckb hero2" data-act="tab" data-v="recipes" style="background-image:url(img/coffee.jpg)" aria-label="Back to recipes"><span class="t"><small>Kayley&rsquo;s drinks</small><b>Coffee Korner</b><span>' + cs.length + " drink" + (cs.length === 1 ? "" : "s") + " &middot; " + (low ? low + " supplies low or out" : "supplies stocked") + "</span></span></button>" +
+    '<button class="linkbtn" data-act="tab" data-v="recipes" style="padding-left:0">Back to Recipes</button>';
+  if (isOji()) h += '<button class="big" data-act="ckcam">' + ic("cam", "") + ' Snap a new drink</button><button class="linkbtn" data-act="cktype" style="display:block;margin:2px auto 0">Or type Kayley&rsquo;s notes</button><div class="sub" style="text-align:center">Lia writes it up as a recipe here.</div>';
+  h += '<div class="h2">Drinks</div>' + (cs.length ? '<div class="grid2">' + cs.map(function (c) { var a = avgStars(c); return '<button class="rcard" data-act="drink" data-id="' + esc(c.id) + '">' + cupPic(110, c.photo) + '<div class="nm">' + esc(c.name) + '<div class="sub">' + [esc(c.tag || ""), esc(c.ver || "v1"), a ? a.toFixed(1) + " stars" : ""].filter(Boolean).join(" &middot; ") + "</div></div></button>"; }).join("") + "</div>" : '<p class="empty">No drinks yet.' + (isOji() ? " Snap Kayley&rsquo;s first one." : "") + "</p>");
+  h += '<div class="card"><div class="row"><h3 class="grow">Coffee supplies</h3><span class="sub">tap to change</span></div>' + sl.map(function (x, i) { return '<div class="ing"><span class="grow">' + esc(x.n) + '</span><button class="plain" data-act="supc" data-v="' + i + '" aria-label="' + esc(x.n) + ', tap to change">' + SCHIP[x.s || "ok"] + "</button></div>"; }).join("") +
+    (low ? '<button class="big" data-act="suplist">Add ' + low + " low or out to Stop &amp; Shop Needs</button>" : '<p class="sub" style="margin:8px 0 0">All stocked.</p>') + (isOji() ? '<button class="linkbtn" data-act="supadd" style="display:block;margin:6px auto 0">Add a supply</button>' : "") + "</div>";
+  return h;
+}
+function drink() {
+  var c = byId(D.coffee, st.ck); if (!c) { st.tab = "coffee"; return coffee(); }
+  var ings = arr(c.ings), steps = arr(c.steps), tw = arr(c.tweaks), mine = Number(stars(c)[me.name]) || 0, a = avgStars(c), nr = Object.keys(stars(c)).length;
+  var h = '<div class="rd"><div class="dhero">' + cupPic(240, c.photo) + '<button class="back" data-act="tab" data-v="coffee" aria-label="Back">' + ic("back", "") + "</button></div>" +
+    "<h1>" + esc(c.name) + '</h1><div class="sub">' + [esc(c.tag || ""), "version " + esc(String(c.ver || "v1").replace(/^v/, "")), "made by Kayley"].filter(Boolean).join(" &middot; ") + "</div>" +
+    '<div class="card"><div class="row"><div class="grow"><h3>Rate it</h3><div class="sub">' + (nr ? a.toFixed(1) + " from " + nr + " rating" + (nr === 1 ? "" : "s") : "No ratings yet") + '</div></div><div class="stars">' + [1, 2, 3, 4, 5].map(function (n) { return '<button data-act="star" data-v="' + n + '" class="' + (n <= mine ? "on" : "") + '" aria-label="' + n + ' stars">&#9733;</button>'; }).join("") + "</div></div></div>" +
+    '<div class="card"><h3>What goes in</h3>' + (ings.length ? ings.map(function (x) { var s = supFor(x.n), cm = catalogMatch(x.n); return '<div class="ing"><span class="q">' + esc(x.q || "") + '</span><span class="grow">' + esc(x.n) + (cm ? '<span class="u">Usually ' + esc(cm.brand || cm.name) + "</span>" : "") + "</span>" + (s ? SCHIP[s.s || "ok"] : "") + "</div>"; }).join("") : '<p class="sub">No ingredients yet.</p>') + "</div>" +
+    (steps.length ? '<div class="card"><h3>How Kayley makes it</h3><ol class="steps">' + steps.map(function (s) { return "<li><span>" + esc(s) + "</span></li>"; }).join("") + "</ol></div>" : "") +
+    (tw.length ? '<div class="card"><h3>Kayley&rsquo;s tweaks</h3>' + tw.map(function (t) { return '<div class="tw"><b>' + esc(t.v || "") + "</b>" + esc(t.t || "") + "</div>"; }).join("") + "</div>" : "") +
+    (c.note ? '<p class="sub">' + esc(c.note) + "</p>" : "") +
+    (isOji() ? '<div class="sticky"><button class="big" data-act="ckphoto">' + ic("cam", "") + ' Add a photo</button><button class="big alt" data-act="tweak">New version</button></div><button class="linkbtn" data-act="ckdel" style="display:block;margin:4px auto">Remove this drink</button>' : "") + "</div>";
+  return h;
+}
+
+/* ---------- camera: shrink on the phone, then save to the family photos folder ---------- */
+var camCb = null;
+function camera(cb) {
+  camCb = cb; var inp = $("camin");
+  if (!inp) { inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment"); inp.id = "camin"; inp.hidden = true; document.body.appendChild(inp);
+    inp.addEventListener("change", function () { var f = inp.files && inp.files[0]; inp.value = ""; if (!f || !camCb) return; var cbk = camCb; camCb = null; shrink(f, 1600, 0.82).then(cbk, function () { toast("Could not read that photo. Try another."); }); }); }
+  inp.click();
+}
+function shrink(file, max, q) {
+  return new Promise(function (ok, bad) {
+    var url = URL.createObjectURL(file), im = new Image();
+    im.onload = function () { var w = im.naturalWidth, h = im.naturalHeight, s = Math.min(1, max / Math.max(w, h)), c = document.createElement("canvas"); c.width = Math.round(w * s); c.height = Math.round(h * s); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c.toDataURL("image/jpeg", q)); };
+    im.onerror = function () { URL.revokeObjectURL(url); bad(new Error("img")); };
+    im.src = url;
+  });
+}
+function upload(data, kind) {
+  return call({action: "photo", data: data, kind: kind, who: me.name || ""}).then(function (r) { if (!r.ok) throw new Error(r.error || "upload_failed"); return r.url; });
+}
+function errMsg(e) { var m = e && e.message || ""; return m === "unknown_action" ? "The kitchen sheet needs its update first (Code.gs 1.2.0)." : m === "daily_limit" ? "Lia hit her limit for today." : m === "not_a_recipe" ? "Lia could not find a recipe in that." : "Something went wrong (" + m + "). Try again."; }
+function liaRead(opts) {
+  return call({action: "liarecipe", image: opts.image || "", text: opts.text || "", mode: opts.mode || "recipe", who: me.name || ""}).then(function (r) { if (!r.ok) throw new Error(r.error || "lia_failed"); return r.recipe; });
+}
+function cleanRecipe(o) {
+  var cat = RCATS.indexOf(o.cat) > -1 ? o.cat : "Dinners";
+  return {name: String(o.name || "New recipe").slice(0, 80), cat: cat, prep: Number(o.prep) || 0, cook: Number(o.cook) || 0, serves: Number(o.serves) || 8,
+    ings: arr(o.ings).slice(0, 40).map(function (i) { return {n: String(i.n || "").slice(0, 80), q: String(i.q || "").slice(0, 30)}; }).filter(function (i) { return i.n; }),
+    steps: arr(o.steps).slice(0, 15).map(function (s) { return String(s).slice(0, 300); }), note: String(o.note || "").slice(0, 300)};
+}
+function recipePreview(o, src) {
+  st.draft = o;
+  return '<h3 id="shT">' + esc(o.name) + '</h3><div class="sub">' + [esc(o.cat), o.prep + o.cook ? (o.prep + o.cook) + " min" : "", "feeds " + o.serves].filter(Boolean).join(" &middot; ") + "</div>" + (o.note ? '<p class="sub">' + esc(o.note) + "</p>" : "") +
+    '<div style="margin:8px 0">' + o.ings.map(function (i) { return '<div class="ing"><span class="q">' + esc(i.q) + '</span><span class="grow">' + esc(i.n) + "</span></div>"; }).join("") + "</div>" +
+    (o.steps.length ? '<ol class="steps">' + o.steps.map(function (s) { return "<li><span>" + esc(s) + "</span></li>"; }).join("") + "</ol>" : "") +
+    '<button class="big" data-act="draftsave">Save to Ojazel&rsquo;s Recipe Book</button>' + (canPlan() ? '<button class="big alt" data-act="draftplan">Save and put on the calendar</button>' : "") + '<button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Not this one</button>';
+}
+function saveDraft() {
+  var o = st.draft; if (!o) return null; st.draft = null;
+  return put("recipes", null, {name: o.name, cat: o.cat, prep: o.prep, cook: o.cook, serves: o.serves, ings: o.ings, steps: o.steps, note: o.note, img: "", addedBy: me.name || "", kind: "banger", loves: [], notes: [], photos: []});
+}
+function snapRecipe(mode) {
+  camera(function (data) {
+    sheet('<h3 id="shT">Lia is reading it</h3><div class="readwrap"><img src="' + data + '" alt="Your photo"><p class="sub"><span class="dots">...</span> This takes about 15 seconds.</p></div>', true);
+    liaRead({image: data, mode: "recipe"}).then(function (o) { closeSheet(true); sheet(recipePreview(cleanRecipe(o))); }, function (e) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(e)) + '</p><button class="big" data-act="addrec">Try again</button><button class="linkbtn" data-act="close">Close</button>'); });
+  });
+}
+function planPick() {
+  st.wk = st.wk || 0; var keep = st.pday;
+  sheet('<h3 id="shT">Put on the calendar</h3><div class="sub">Pick a night</div><div class="seg2" role="group"><button data-act="pwk" data-v="0" aria-pressed="' + (!st.wk) + '">' + weekRange(0) + '</button><button data-act="pwk" data-v="1" aria-pressed="' + (st.wk === 1) + '">' + weekRange(1) + "</button></div>" + weekStrip(-1, "pnight") + '<button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Cancel</button>');
+  st.pday = keep;
+}
+
 function dueItems() {
   var now = Date.now(), out = [];
   D.catalog.forEach(function (c) {
@@ -593,9 +766,9 @@ function home() {
     '<div class="qa"><input type="text" id="ask" placeholder="Add to the Needs list" aria-label="Add to the Needs list" autocomplete="off" enterkeyhint="send"><button class="btn sm addb" data-act="send" hidden>Add</button><button class="mic2" data-act="mic" aria-label="Tap to talk">' + ic("mic", "") + '</button></div><div class="sugg" id="sugg"></div><div class="qahint">Type it, or tap the mic and say &ldquo;add bacon to Stop &amp; Shop&rdquo;</div>' +
     '<div class="counts"><button class="cnt" data-act="goshop" data-v="needs"><span class="n">' + n + '</span><span class="l">On the Needs list</span><span class="s">Waiting to be moved to the cart</span></button>' +
     '<button class="cnt c2" data-act="goshop" data-v="cart"><span class="n">' + c + '</span><span class="l">In the cart</span><span class="s">' + (w ? w + " waiting to push" : "All synced with Stop &amp; Shop") + "</span></button></div>" +
-    pushBar() + toolBtns(true) +
+    weekCard() + pushBar() + toolBtns(true) +
     '<button class="sc" data-act="tab" data-v="cook" style="width:100%;margin-bottom:14px"><span class="face"><img src="img/lia/f.png" alt=""></span><span><b>Ask Lia</b><small>What can we cook tonight?</small></span></button>' +
-    voteMini() + planToday() + alertHtml() + budgetHtml() + adviceHtml() + dealsHtml(3) + restockHtml() +
+    voteMini() + alertHtml() + budgetHtml() + adviceHtml() + dealsHtml(3) + restockHtml() +
     '<div class="homelinks"><button class="linkbtn" data-act="recap">Our Store recap</button><button class="linkbtn" data-act="family">Usual brands and family preferences</button>' + (standalone() ? "" : '<button class="linkbtn" data-act="showinstall">Install this as an app on your phone</button>') + "</div>";
 }
 function shop() {
@@ -647,28 +820,15 @@ function pan() {
   });
   return h + '<p class="sub">&ldquo;Check&rdquo; means estimated from recent orders. Tap to confirm, then Low or Out as things run down. When you mark an order as placed, those items land here as OK.</p>';
 }
-function rec() {
-  return pageTop("Bangers", "Family favorites and new finds") +
-    '<div class="card row"><div class="grow"><h3>Meal plan</h3><div class="sub">Plan breakfast, lunch, dinner and snacks for the week.</div></div><button class="btn" data-act="tab" data-v="plan">Open</button></div><div class="card row"><div class="grow"><h3>Suggest a meal</h3><div class="sub">Anyone can add one. Send Claude a screenshot to turn it into a full recipe.</div></div><button class="btn" data-act="suggest">Add</button></div>' +
-    (D.recipes.length ? '<div class="grid2">' + D.recipes.map(function (r) { var n = recipeIngs(r).filter(function (x) { return x.s === "need"; }).length; return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + recImg(r) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + '<div class="sub">' + (r.ings && r.ings.length ? n + " to buy" : (r.addedBy ? "suggested by " + esc(r.addedBy) : "suggested")) + " &middot; made " + lastMade(r.id) + "</div></div></button>"; }).join("") + "</div>" : '<p class="empty">No recipes yet.</p>') +
-    '<p class="sub" style="margin-top:12px">Starter recipes are for a family of 8. Tell Claude your real versions and they replace them.</p>';
-}
-function recipeSheet(id) {
-  var r = byId(D.recipes, id); if (!r) return "";
-  var ings = recipeIngs(r), need = ings.filter(function (x) { return x.s === "need"; }), tag = {have: '<span class="chip ok">Have</span>', check: '<span class="chip info">Check</span>', need: '<span class="chip warn">Need</span>'};
-  return '<div class="banner-img" style="background-image:url(' + recImg(r) + ');margin-top:0" role="img" aria-label="' + esc(r.name) + '"></div><h3 id="shT">' + esc(r.name) + '</h3><div class="sub">Feeds ' + (r.serves || 8) + (r.note ? " &middot; " + esc(r.note) : "") + (r.addedBy ? " &middot; suggested by " + esc(r.addedBy) : "") + "</div>" +
-    (ings.length ? '<div style="margin:10px 0">' + ings.map(function (x) { return '<div class="ing"><span>' + esc(x.n) + ' <span class="sub">' + esc(x.q) + "</span>" + (function () { var c = catalogMatch(x.n); return c ? '<div class="sub last">Usually ' + esc(c.brand || c.name) + (c.lastBought ? " \u00b7 last bought " + fmtDay(c.lastBought) : "") + "</div>" : ""; })() + "</span>" + tag[x.s] + "</div>"; }).join("") + "</div>" +
-      (need.length ? '<button class="big" data-act="addneed" data-id="' + esc(r.id) + '">Add ' + need.length + " missing to " + esc(st.store) + " list</button>" : "<p>You have everything.</p>") : '<p class="sub" style="margin:10px 0">No ingredient list yet. Send Claude the recipe and it will fill this in.</p>') +
-    '<button class="linkbtn" data-act="close">Close</button>';
-}
-var views = {home: home, shop: shop, cook: cook, pantry: pan, recipes: rec, plan: plan};
-var tabs = [["home", "Home", "home"], ["shop", "Shop", "cart"], ["cook", "Cook", "cook"], ["pantry", "Pantry", "pantry"], ["recipes", "Bangers", "book"]];
+var views = {home: home, shop: shop, cook: cook, pantry: pan, recipes: rec, plan: plan, rdetail: rdetail, coffee: coffee, drink: drink};
+var tabs = [["home", "Home", "home"], ["shop", "Shop", "cart"], ["plan", "Calendar", "cal"], ["pantry", "Pantry", "pantry"], ["recipes", "Recipes", "book"]];
+function navTab() { var t = st.tab; if (t === "cook") return "home"; if (t === "rdetail") return st.rfrom === "plan" ? "plan" : st.rfrom === "home" ? "home" : "recipes"; if (t === "coffee" || t === "drink") return "recipes"; return t; }
 function render() {
-  var a = document.activeElement, keep = a && a.id && /^(ask2?|liain)$/.test(a.id) ? {id: a.id, v: a.value} : null, lk = $("liain"); if (!keep && lk && lk.value) keep = {id: "liain", v: lk.value, nf: 1};
+  var a = document.activeElement, keep = a && a.id && /^(ask2?|liain|rq)$/.test(a.id) ? {id: a.id, v: a.value} : null, lk = $("liain"); if (!keep && lk && lk.value) keep = {id: "liain", v: lk.value, nf: 1};
   $("view").innerHTML = views[st.tab]();
   var qn = queuedFor("Stop & Shop").length;
-  $("tabs").innerHTML = tabs.map(function (t) { return '<button class="tab" role="tab" style="position:relative" aria-selected="' + (st.tab === t[0]) + '" data-act="tab" data-v="' + t[0] + '">' + (t[0] === "shop" && qn ? '<span class="tbadge">' + qn + "</span>" : "") + ic(t[2]) + t[1] + "</button>"; }).join("");
-  $("snap").hidden = !(st.tab === "pantry" || st.tab === "recipes");
+  $("tabs").innerHTML = tabs.map(function (t) { return '<button class="tab" role="tab" style="position:relative" aria-selected="' + (navTab() === t[0]) + '" data-act="tab" data-v="' + t[0] + '">' + (t[0] === "shop" && qn ? '<span class="tbadge">' + qn + "</span>" : "") + ic(t[2]) + t[1] + "</button>"; }).join("");
+  $("snap").hidden = st.tab !== "pantry";
   setStatus();
   if (keep) { var el = $(keep.id); if (el) { el.value = keep.v; if (!keep.nf) el.focus(); showSugg(keep.id, keep.v); } }
   toggleAdd();
@@ -685,7 +845,7 @@ function setMe(n) { me.name = n; ls("pfk_name", n); closeSheet(true); render(); 
 /* ---------- clicks ---------- */
 document.addEventListener("click", function (e) {
   var el = e.target.closest("[data-act]"); if (!el) return; var a = el.getAttribute("data-act"), id = el.getAttribute("data-id"), i;
-  if (a === "tab") { st.tab = el.getAttribute("data-v"); window.scrollTo(0, 0); closeSheet(); render(); }
+  if (a === "tab") { st.tab = el.getAttribute("data-v"); if (st.tab === "plan") { st.wk = 0; st.pday = null; } window.scrollTo(0, 0); closeSheet(); render(); }
   else if (a === "store") { st.store = el.getAttribute("data-v"); render(); }
   else if (a === "inc") { i = byId(D.list, id); if (i) put("list", id, {qty: (i.qty || 1) + 1}); }
   else if (a === "dec") { i = byId(D.list, id); if (i && (i.qty || 1) > 1) put("list", id, {qty: i.qty - 1}); }
@@ -697,14 +857,14 @@ document.addEventListener("click", function (e) {
   else if (a === "mystore") { st.rmId = ""; st.sf = "all"; sheet('<h3 id="shT">Our Store</h3><p class="sub">Everything we buy. Oldest purchases first, so you can clear out what we no longer get.</p><input type="text" id="storeq" placeholder="Search Our Store" autocomplete="off" aria-label="Search Our Store"><div class="seg2" style="margin:8px 0"><button data-act="storefilter" data-v="all" aria-pressed="true">All</button><button data-act="storefilter" data-v="old" aria-pressed="false">Not bought in 5+ months</button><button data-act="storefilter" data-v="dups" aria-pressed="false">Possible duplicates</button></div><div id="storeList"></div><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Close</button>'); storeList(); }
   else if (a === "budget") { sheet('<h3 id="shT">Weekly budget</h3><p class="sub">Your running cart total shows against this on Home. Leave empty to turn it off.</p><input type="text" id="budIn" inputmode="decimal" placeholder="e.g. 250" value="' + (budgetVal() || "") + '" autocomplete="off" aria-label="Weekly budget"><button class="big" data-act="budsave">Save</button><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Cancel</button>'); }
   else if (a === "budsave") { var bi = $("budIn"), bv = bi ? parseFloat(bi.value.replace(/[^0-9.]/g, "")) : 0; put("settings", "budget", {value: String(bv > 0 ? bv : 0)}); closeSheet(true); toast(bv > 0 ? "Budget set to $" + bv.toFixed(0) + "." : "Budget turned off."); }
-  else if (a === "wk") { st.wk = Number(el.getAttribute("data-v")) || 0; render(); }
+  else if (a === "wk") { st.wk = Number(el.getAttribute("data-v")) || 0; st.pday = null; render(); }
   else if (a === "pslot") { pickSheet(id); }
   else if (a === "ppick") { setSlot(st.pslot, {r: id}); closeSheet(true); render(); }
   else if (a === "pquick") { setSlot(st.pslot, {t: el.getAttribute("data-v")}); closeSheet(true); render(); }
   else if (a === "pfree") { var pt = $("pt"), pv = pt ? pt.value.trim() : ""; if (pv) { setSlot(st.pslot, {t: pv.charAt(0).toUpperCase() + pv.slice(1)}); closeSheet(true); render(); } }
   else if (a === "pclear") { setSlot(st.pslot, null); closeSheet(true); render(); }
-  else if (a === "pok") { var pe = (planAll()[st.pslot.split("|")[0]] || {})[st.pslot.split("|")[1]]; if (pe) { delete pe.s; setSlot(st.pslot, pe); } closeSheet(true); render(); }
-  else if (a === "pokall") { var pa = planAll(); Object.keys(pa).forEach(function (k) { Object.keys(pa[k]).forEach(function (sl) { if (pa[k][sl] && pa[k][sl].s) delete pa[k][sl].s; }); }); planSave(pa); render(); toast("Approved."); }
+  else if (a === "pok") { var psid = id || st.pslot, pe = (planAll()[psid.split("|")[0]] || {})[psid.split("|")[1]]; if (pe) { delete pe.s; setSlot(psid, pe); } closeSheet(true); render(); toast("Approved."); }
+  else if (a === "pokall") { var pa = planAll(); Object.keys(pa).forEach(function (k) { Object.keys(pa[k]).forEach(function (sl) { if (pa[k][sl] && pa[k][sl].s) { delete pa[k][sl].s; pa[k][sl].by = me.name || ""; } }); }); planSave(pa); render(); toast("Approved."); }
   else if (a === "pclearwk") { var pw = planAll(); weekDays(st.wk || 0).forEach(function (d) { delete pw[dkey(d)]; }); planSave(pw); render(); toast("Week cleared."); }
   else if (a === "pauto") { var pn = planAuto(); render(); toast(pn ? "Lia filled " + pn + " spots. Tap any to swap." : "Nothing empty to fill."); }
   else if (a === "pmade") { var mm = meals(); mm[id] = today(); put("settings", "meallog", {value: JSON.stringify(mm)}); toast("Logged as made."); }
@@ -720,7 +880,7 @@ document.addEventListener("click", function (e) {
   else if (a === "storerm") { if (st.rmId === id) { var cm = byId(D.catalog, id), nmx = cm ? (cm.brand || cm.name) : "item"; st.rmId = ""; del("catalog", id); var ss0 = byId(D.settings, "storestats"); if (ss0) { var sj = safeParse(ss0.value, {}); delete sj[id]; put("settings", "storestats", {value: JSON.stringify(sj)}); } storeList(); toast("Removed " + nmx + " from Our Store."); } else { st.rmId = id; storeList(); } }
   else if (a === "pickcat") { var c = byId(D.catalog, id), inEl = $(el.getAttribute("data-in")), store = st.store; if (c) { if (el.getAttribute("data-in") === "ask" && inEl) store = parseAdd(inEl.value).store; var was = listState(c.brand || c.name); addFromCatalog(c, store); st.store = store; if (inEl) inEl.value = ""; render(); toast(was ? (c.brand || c.name) + " was already there. Added one more." : "Added " + (c.brand || c.name) + " to " + store + "."); } }
   else if (a === "adddeal") { var dl = dealsList(), d = dl[Number(id)]; if (d) { var rd = addPlain({name: d.name, size: d.size || "", cat: d.cat || guessCat(d.name), store: "Stop & Shop", qty: 1, status: "queued", note: "On sale $" + d.sale, addedBy: me.name}); dl.splice(Number(id), 1); put("settings", "deals", {value: JSON.stringify(dl)}); toast("Queued. It goes into your Stop & Shop cart at the next push."); } }
-  else if (a === "recipe") { sheet(recipeSheet(id)); }
+  else if (a === "recipe") { st.rid = id; if (st.tab !== "rdetail") st.rfrom = st.tab; st.tab = "rdetail"; st.rsv = null; closeSheet(true); window.scrollTo(0, 0); render(); }
   else if (a === "addneed") { var r = byId(D.recipes, id); if (r) { var need = recipeIngs(r).filter(function (x) { return x.s === "need"; }); need.forEach(function (x) { addByName(x.n, st.store, "For " + r.name + " (" + x.q + ")"); }); closeSheet(); toast("Added " + need.length + " items to your " + st.store + " list."); } }
   else if (a === "pcycle") { var pp = byId(D.pantry, id), nx2 = {unconfirmed: "ok", ok: "low", low: "out", out: "ok"}; if (pp) put("pantry", id, {status: nx2[pp.status] || "ok"}); }
   else if (a === "pantrylist") { var p2 = byId(D.pantry, id); if (p2) { addByName(p2.name, st.store, "Running low"); toast("Added " + p2.name + " to " + st.store + "."); } }
@@ -728,7 +888,7 @@ document.addEventListener("click", function (e) {
   else if (a === "savepantry") { var n = $("pn").value.trim(); if (!n) { toast("Type an item name."); return; } put("pantry", null, {name: n, zone: $("pz").value, size: "", note: "Added by " + (me.name || "hand"), status: "ok"}); closeSheet(); }
   else if (a === "vote") { var day = today(); put("votes", day + "_" + me.name, {day: day, recipeId: id, voter: me.name}); if (st.voteOpen && !$("sheet").hidden) $("sheetBody").innerHTML = voteCard() + '<button class="big alt" data-act="close">Close</button>'; }
   else if (a === "suggest") { sheet('<h3 id="shT">Suggest a meal</h3><label class="sub" for="sn">What should we eat?</label><input type="text" id="sn" placeholder="e.g. Jerk chicken and rice" autocomplete="off"><label class="sub" for="snote" style="display:block;margin-top:10px">Ingredients, a link, or a note (optional)</label><textarea class="f" id="snote"></textarea><button class="big" data-act="savesuggest">Add to recipes</button><button class="linkbtn" data-act="close">Cancel</button>'); }
-  else if (a === "savesuggest") { var nm = $("sn").value.trim(); if (!nm) { toast("Give the meal a name."); return; } put("recipes", null, {name: nm, img: "", serves: 8, ings: [], note: $("snote").value.trim().slice(0, 1000), addedBy: me.name, kind: "suggested"}); closeSheet(); toast("Added. Everyone can vote on it."); }
+  else if (a === "savesuggest") { var nm = $("sn").value.trim(); if (!nm) { toast("Give the meal a name."); return; } put("recipes", null, {name: nm, img: "", serves: 8, ings: [], note: $("snote").value.trim().slice(0, 1000), addedBy: me.name, kind: "suggested", cat: "Dinners", loves: [], notes: [], photos: [], steps: []}); closeSheet(); toast("Added to Ojazel's Recipe Book. Everyone can vote on it."); }
   else if (a === "photos") { sheet(photoHtml()); }
   else if (a === "family") { familySheet(); }
   else if (a === "savepin") { var pv = $("pinIn").value.trim(); if (!pv) return; me.pin = pv; ls("pfk_pin", pv); closeSheet(true); st.loaded = false; poll(); }
@@ -830,6 +990,59 @@ document.addEventListener("click", function (e) { var el = e.target.closest("[da
     .then(function (reg) { return reg && reg.update ? reg.update().catch(function () {}) : null; })
     .then(function () { location.reload(); }, function () { location.reload(); });
 });
+
+/* ---------- v21: calendar, recipe book, camera, Coffee Korner ---------- */
+document.addEventListener("click", function (e) {
+  var el = e.target.closest("[data-act]"); if (!el) return; var a = el.getAttribute("data-act"), id = el.getAttribute("data-id"), v = el.getAttribute("data-v"), r, c;
+  if (a === "hday") { st.tab = "plan"; st.wk = 0; st.pday = Number(v) || 0; window.scrollTo(0, 0); render(); }
+  else if (a === "pday") { st.pday = Number(v) || 0; render(); }
+  else if (a === "rback") { st.tab = st.rfrom || "recipes"; window.scrollTo(0, 0); render(); }
+  else if (a === "rcat") { st.rcat = v; var rb = $("rbody"); if (rb) rb.innerHTML = recBody(); }
+  else if (a === "rsv") { st.rsv = Number(v) || 8; render(); }
+  else if (a === "love") { r = byId(D.recipes, st.rid); if (r && me.name) { var L = rLoves(r).slice(), i = L.indexOf(me.name); if (i > -1) L.splice(i, 1); else L.push(me.name); put("recipes", r.id, {loves: L}); } }
+  else if (a === "addnote") { sheet('<h3 id="shT">Add a family note</h3><textarea class="f" id="noteIn" placeholder="e.g. Hazel&rsquo;s way: a squeeze of lime at the end"></textarea><button class="big" data-act="notesave">Save note</button><button class="linkbtn" data-act="close">Cancel</button>'); }
+  else if (a === "notesave") { r = byId(D.recipes, st.rid); var nt = $("noteIn") ? $("noteIn").value.trim() : ""; if (!nt) { toast("Type the note first."); return; } if (r) { var N = arr(r.notes).slice(); N.push({by: me.name || "Family", t: nt.slice(0, 300)}); put("recipes", r.id, {notes: N}); } closeSheet(true); toast("Note saved."); }
+  else if (a === "rphoto" || a === "rphoto2") { var rid0 = id || st.rid; closeSheet(true); camera(function (data) { toast("Saving your photo..."); upload(data, "recipe").then(function (u) { var rr = byId(D.recipes, rid0); if (!rr) return; var P0 = rPhotos(rr).slice(); P0.unshift({u: u, by: me.name || "", d: today()}); put("recipes", rr.id, {photos: P0.slice(0, 30)}); toast("Photo added to " + rr.name + "."); }, function (er) { toast(errMsg(er)); }); }); }
+  else if (a === "made") { r = byId(D.recipes, id); if (!r) return; var mm = meals(); mm[id] = today(); put("settings", "meallog", {value: JSON.stringify(mm)}); sheet('<h3 id="shT">Logged: ' + esc(r.name) + '</h3><p class="sub">Snap tonight&rsquo;s plate? It goes into the recipe&rsquo;s &ldquo;When we made it&rdquo; photos.</p><button class="big" data-act="rphoto2" data-id="' + esc(r.id) + '">' + ic("cam", "") + ' Take a photo</button><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Not now</button>'); }
+  else if (a === "planit") { st.planRid = st.rid; st.wk = 0; planPick(); }
+  else if (a === "pwk") { st.wk = Number(v) || 0; planPick(); }
+  else if (a === "pnight") { var dd = weekDays(st.wk || 0)[Number(v) || 0]; setSlot(dkey(dd) + "|d", {r: st.planRid}); closeSheet(true); st.pday = Number(v) || 0; toast("On the calendar for " + DAYS[dd.getDay()] + "."); render(); }
+  else if (a === "rvote") { var day = today(); put("votes", day + "_" + me.name, {day: day, recipeId: id, voter: me.name}); toast("Voted for tonight."); }
+  else if (a === "addrec") { sheet('<h3 id="shT">Add a recipe</h3><button class="big" data-act="rsnap">' + ic("cam", "") + ' Snap a recipe or screenshot</button><button class="big alt" data-act="rtext">Paste the recipe text</button>' + '<button class="big alt" data-act="suggest">Just suggest a meal by name</button><p class="sub" style="margin-top:10px">You can also send it to Claude in the Claude app with &ldquo;add to the recipe book.&rdquo;</p><button class="linkbtn" data-act="close" style="display:block;margin:0 auto">Close</button>'); }
+  else if (a === "rsnap") { closeSheet(true); snapRecipe(); }
+  else if (a === "rtext") { sheet('<h3 id="shT">Paste the recipe</h3><p class="sub">Paste the caption or recipe text. A link alone is not enough; Lia cannot open web pages.</p><textarea class="f" id="rtIn" style="min-height:160px"></textarea><button class="big" data-act="rtextgo">Lia, read it</button><button class="linkbtn" data-act="close">Cancel</button>'); }
+  else if (a === "rtextgo") { var tx = $("rtIn") ? $("rtIn").value.trim() : ""; if (!tx) { toast("Paste the recipe first."); return; } sheet('<h3 id="shT">Lia is reading it</h3><p class="sub"><span class="dots">...</span> About 15 seconds.</p>', true); liaRead({text: tx}).then(function (o) { closeSheet(true); sheet(recipePreview(cleanRecipe(o))); }, function (er) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(er)) + '</p><button class="big" data-act="close">Close</button>'); }); }
+  else if (a === "draftsave") { var nid = saveDraft(); closeSheet(true); if (nid) { st.rid = nid; st.rfrom = st.tab === "rdetail" ? "recipes" : (st.tab === "cook" ? "cook" : "recipes"); st.tab = "rdetail"; st.rsv = null; window.scrollTo(0, 0); render(); toast("Saved to Ojazel's Recipe Book."); } }
+  else if (a === "draftplan") { var nid2 = saveDraft(); if (nid2) { st.planRid = nid2; st.wk = 0; planPick(); } }
+  else if (a === "liasnap") { camera(function (data) {
+      st.chat.push({who: "me", t: "[photo]", img: data}); st.chat.push({who: "ai", t: '<span class="dots">...</span>', pending: true}); render(); scrollDown();
+      liaRead({image: data}).then(function (o) { var rc = cleanRecipe(o); st.chat.pop(); st.chat.push({who: "ai", t: "I read it: <b>" + esc(rc.name) + "</b>, " + rc.ings.length + " ingredients and " + rc.steps.length + " steps, scaled for " + rc.serves + '.<div class="opts"><button class="opt fill" data-act="draftshow">Look and save</button></div>', raw: "I read it: " + rc.name}); st.draft = rc; render(); scrollDown(); sheet(recipePreview(rc)); },
+        function (er) { st.chat.pop(); st.chat.push({who: "ai", t: esc(errMsg(er)), raw: ""}); render(); scrollDown(); }); }); }
+  else if (a === "draftshow") { if (st.draft) sheet(recipePreview(st.draft)); else toast("Already saved. Look in the Recipe Book."); }
+  /* Coffee Korner */
+  else if (a === "drink") { st.ck = id; st.tab = "drink"; window.scrollTo(0, 0); render(); }
+  else if (a === "star") { c = byId(D.coffee, st.ck); if (c && me.name) { var so = JSON.parse(JSON.stringify(stars(c))); so[me.name] = Number(v); put("coffee", c.id, {stars: so}); toast("Thanks. Kayley will see it."); } }
+  else if (a === "supc") { var sl = supList(), x = sl[Number(v)], o = ["ok", "low", "out"]; if (x) { x.s = o[(o.indexOf(x.s || "ok") + 1) % 3]; supSave(sl); } }
+  else if (a === "suplist") { var lows = supList().filter(function (s) { return s.s !== "ok"; }); lows.forEach(function (s) { addByName(s.n, "Stop & Shop", "Coffee Korner"); }); toast("Added " + lows.length + " to Stop & Shop Needs."); }
+  else if (a === "supadd") { sheet('<h3 id="shT">Add a coffee supply</h3><input type="text" id="supIn" placeholder="e.g. Caramel sauce" autocomplete="off"><button class="big" data-act="supsave">Add</button><button class="linkbtn" data-act="close">Cancel</button>'); }
+  else if (a === "supsave") { var sn = $("supIn") ? $("supIn").value.trim() : ""; if (!sn) return; var sl2 = supList(); sl2.push({n: sn.slice(0, 60), s: "ok"}); supSave(sl2); closeSheet(true); }
+  else if (a === "tweak") { c = byId(D.coffee, st.ck); if (!c) return; var nv = "v" + ((parseInt(String(c.ver || "v1").replace(/\D/g, ""), 10) || 1) + 1); sheet('<h3 id="shT">New version (' + nv + ')</h3><p class="sub">What did Kayley change?</p><textarea class="f" id="twIn" placeholder="e.g. Half the creamer, added cinnamon"></textarea><button class="big" data-act="tweaksave" data-v="' + nv + '">Save as ' + nv + '</button><button class="linkbtn" data-act="close">Cancel</button>'); }
+  else if (a === "tweaksave") { c = byId(D.coffee, st.ck); var tt = $("twIn") ? $("twIn").value.trim() : ""; if (!c || !tt) { toast("Type what changed."); return; } var T = arr(c.tweaks).slice(); T.push({v: v, t: tt.slice(0, 300)}); put("coffee", c.id, {ver: v, tweaks: T}); closeSheet(true); toast("Saved as " + v + "."); }
+  else if (a === "ckphoto") { var cid = st.ck; camera(function (data) { toast("Saving your photo..."); upload(data, "coffee").then(function (u) { put("coffee", cid, {photo: u}); toast("Photo added."); }, function (er) { toast(errMsg(er)); }); }); }
+  else if (a === "ckdel") { if (st.ckdel !== st.ck) { st.ckdel = st.ck; toast("Tap Remove again to delete this drink."); return; } del("coffee", st.ck); st.ckdel = null; st.tab = "coffee"; render(); toast("Removed."); }
+  else if (a === "ckcam") { camera(function (data) {
+      sheet('<h3 id="shT">Lia is writing it up</h3><div class="readwrap"><img src="' + data + '" alt="Your photo"><p class="sub"><span class="dots">...</span> About 15 seconds.</p></div>', true);
+      Promise.all([liaRead({image: data, mode: "drink"}), upload(data, "coffee").catch(function () { return ""; })]).then(function (res) { closeSheet(true); newDrink(res[0], res[1]); }, function (er) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(er)) + '</p><button class="big" data-act="close">Close</button>'); }); }); }
+  else if (a === "cktype") { sheet('<h3 id="shT">Kayley&rsquo;s notes</h3><p class="sub">Type or dictate how she made it. Lia turns it into a recipe.</p><textarea class="f" id="ckIn" style="min-height:140px"></textarea><button class="big" data-act="cktypego">Lia, write it up</button><button class="linkbtn" data-act="close">Cancel</button>'); }
+  else if (a === "cktypego") { var ct = $("ckIn") ? $("ckIn").value.trim() : ""; if (!ct) { toast("Type the notes first."); return; } sheet('<h3 id="shT">Lia is writing it up</h3><p class="sub"><span class="dots">...</span> About 15 seconds.</p>', true); liaRead({text: ct, mode: "drink"}).then(function (o) { closeSheet(true); newDrink(o, ""); }, function (er) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(er)) + '</p><button class="big" data-act="close">Close</button>'); }); }
+});
+function newDrink(o, photo) {
+  var nid = put("coffee", null, {name: String(o.name || "New drink").slice(0, 80), tag: String(o.tag || "").slice(0, 30), ver: "v1",
+    ings: arr(o.ings).slice(0, 20).map(function (i) { return {n: String(i.n || "").slice(0, 80), q: String(i.q || "").slice(0, 30)}; }).filter(function (i) { return i.n; }),
+    steps: arr(o.steps).slice(0, 12).map(function (s) { return String(s).slice(0, 300); }), tweaks: [], stars: {}, photo: photo || "", addedBy: me.name || ""});
+  st.ck = nid; st.tab = "drink"; window.scrollTo(0, 0); render(); toast("Added to Coffee Korner.");
+}
+document.addEventListener("input", function (e) { if (e.target.id === "rq") { st.rq = e.target.value; var rb = $("rbody"); if (rb) rb.innerHTML = recBody(); } });
 
 /* ---------- boot ---------- */
 function boot() {
