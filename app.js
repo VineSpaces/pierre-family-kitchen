@@ -47,7 +47,7 @@ function thumb(c, name) {
   return '<div class="thumb" style="background-image:url(img/c/' + esc(c || "pantry") + '.jpg)" aria-hidden="true">' +
     (u ? '<img src="' + esc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:inherit;display:block" onerror="this.remove()">' : "") + "</div>";
 }
-function recImg(r) { if (r.img && /^https?:/.test(r.img)) return r.img; var ph = Array.isArray(r.photos) ? r.photos : safeParse(r.photos, []); if (ph.length && ph[0].u) return ph[0].u; return r.img ? "img/r/" + r.img + ".jpg" : "img/meals.jpg"; }
+function recImg(r) { if (r.img && /^https?:/.test(r.img)) return r.img; var ph = Array.isArray(r.photos) ? r.photos : safeParse(r.photos, []); if (ph.length && ph[0].u) return imgSrc(ph[0].u); return r.img ? "img/r/" + r.img + ".jpg" : "img/meals.jpg"; }
 
 /* ---------- sync with the sheet ---------- */
 var pending = 0, chain = Promise.resolve(), lastJSON = "", polling = false;
@@ -656,7 +656,7 @@ function rdetail() {
     (need.length ? '<button class="big" data-act="addneed" data-id="' + esc(r.id) + '">Add ' + need.length + " missing to " + esc(st.store) + " Needs</button>" : '<p class="sub" style="margin:8px 0 0">We have everything.</p>') : '<p class="sub">No ingredient list yet. Snap the recipe in Ask Lia and she fills it in.</p>') + "</div>";
   if (steps.length) h += '<div class="card"><h3>Steps</h3><ol class="steps">' + steps.map(function (s) { return "<li><span>" + esc(s) + "</span></li>"; }).join("") + "</ol></div>";
   h += '<div class="card"><div class="row"><h3 class="grow">Family notes</h3><button class="btn sm ghost" data-act="addnote">Add a note</button></div>' + (notes.length ? notes.map(function (n) { return '<div class="note"><b>' + esc(n.by || "Family") + "</b>" + esc(n.t || "") + "</div>"; }).join("") : '<p class="sub" style="margin:8px 0 0">Tips like &ldquo;less spicy for the kids&rdquo; go here.</p>') + "</div>";
-  h += '<div class="card"><h3>When we made it</h3><div class="gal">' + photos.map(function (p) { return '<div style="background-image:url(' + esc(p.u) + ')"><small>' + esc(p.by || "") + (p.d ? (p.by ? " &middot; " : "") + esc(fmtDay(kdate(p.d).getTime())) : "") + "</small></div>"; }).join("") + '<button data-act="rphoto">' + ic("cam", "") + "Add our photo</button></div>" + '<div class="sub">' + (ml[r.id] ? "Last made " + esc(fmtDay(kdate(ml[r.id]).getTime())) : "Not made yet") + "</div></div>";
+  h += '<div class="card"><h3>When we made it</h3><div class="gal">' + photos.map(function (p) { return '<div style="background-image:url(' + esc(imgSrc(p.u, "")) + ')"><small>' + esc(p.by || "") + (p.d ? (p.by ? " &middot; " : "") + esc(fmtDay(kdate(p.d).getTime())) : "") + "</small></div>"; }).join("") + '<button data-act="rphoto">' + ic("cam", "") + "Add our photo</button></div>" + '<div class="sub">' + (ml[r.id] ? "Last made " + esc(fmtDay(kdate(ml[r.id]).getTime())) : "Not made yet") + "</div></div>";
   h += '<div class="sticky">' + (canPlan() ? '<button class="big" data-act="planit">Put on the calendar</button>' : '<button class="big" data-act="vote" data-id="' + esc(r.id) + '">Vote for tonight</button>') + "</div></div>";
   return h;
 }
@@ -669,7 +669,7 @@ var SCHIP = {ok: '<span class="chip ok">Have</span>', low: '<span class="chip wa
 function supFor(n) { var t = String(n || "").toLowerCase(), hit = null; supList().forEach(function (s) { var w = s.n.toLowerCase().split(/\s+/).filter(function (x) { return x.length > 3; }); if (!hit && w.some(function (x) { return t.indexOf(x) > -1; })) hit = s; }); return hit; }
 function stars(c) { var o = c.stars && typeof c.stars === "object" && !Array.isArray(c.stars) ? c.stars : safeParse(c.stars, {}); return o || {}; }
 function avgStars(c) { var o = stars(c), v = Object.keys(o).map(function (k) { return Number(o[k]) || 0; }).filter(Boolean); return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : 0; }
-function cupPic(h, u) { return u ? '<div class="pic" style="height:' + h + 'px;background-image:url(' + esc(u) + ')"></div>' : '<div class="cup" style="height:' + h + 'px">' + ic("cup", "") + "</div>"; }
+function cupPic(h, u) { var src = u ? imgSrc(u, "") : ""; return src ? '<div class="pic" style="height:' + h + 'px;background-image:url(' + esc(src) + ')"></div>' : '<div class="cup" style="height:' + h + 'px">' + ic("cup", "") + "</div>"; }
 function coffee() {
   var sl = supList(), low = sl.filter(function (x) { return x.s !== "ok"; }).length, cs = D.coffee.slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
   var h = '<button class="ckb hero2" data-act="tab" data-v="recipes" style="background-image:url(img/coffee.jpg)" aria-label="Back to recipes"><span class="t"><small>Kayley&rsquo;s drinks</small><b>Coffee Korner</b><span>' + cs.length + " drink" + (cs.length === 1 ? "" : "s") + " &middot; " + (low ? low + " supplies low or out" : "supplies stocked") + "</span></span></button>" +
@@ -710,8 +710,23 @@ function shrink(file, max, q) {
     im.src = url;
   });
 }
+function shrinkUrl(u, max, q) { return fetch(u).then(function (r) { return r.blob(); }).then(function (b) { return shrink(b, max, q); }); }
 function upload(data, kind) {
-  return call({action: "photo", data: data, kind: kind, who: me.name || ""}).then(function (r) { if (!r.ok) throw new Error(r.error || "upload_failed"); return r.url; });
+  return shrinkUrl(data, 1000, 0.72).then(function (small) {
+    return call({action: "photo", data: small, kind: kind, who: me.name || ""}).then(function (r) { if (!r.ok) throw new Error(r.error || "upload_failed"); IMGC[r.url] = small; return r.url; });
+  });
+}
+/* Photos live inside the family sheet as "pfkimg:<id>"; fetched once, then kept in the phone's cache. */
+var IMGC = {}, imgPend = {}, imgTimer = null;
+function imgSrc(u, fb) { u = String(u || ""); if (u.indexOf("pfkimg:") !== 0) return u || (fb == null ? "img/meals.jpg" : fb); if (IMGC[u]) return IMGC[u]; loadImg(u); return fb == null ? "img/meals.jpg" : fb; }
+function loadImg(u) {
+  if (imgPend[u]) return; imgPend[u] = 1;
+  var key = "https://pfk.local/img/" + u.slice(7);
+  var fromCache = window.caches ? caches.open("pfk-img").then(function (c) { return c.match(key); }).then(function (r) { return r ? r.text() : null; }).catch(function () { return null; }) : Promise.resolve(null);
+  fromCache.then(function (t) {
+    if (t) return t;
+    return call({action: "img", pid: u}).then(function (r) { if (!r.ok || !r.data) throw new Error(r.error || "img"); if (window.caches) caches.open("pfk-img").then(function (c) { return c.put(key, new Response(r.data)); }).catch(function () {}); return r.data; });
+  }).then(function (t) { IMGC[u] = t; clearTimeout(imgTimer); imgTimer = setTimeout(function () { lastJSON = ""; render(); }, 150); }, function () { setTimeout(function () { delete imgPend[u]; }, 60000); });
 }
 function errMsg(e) { var m = e && e.message || ""; return m === "unknown_action" ? "The kitchen sheet needs its update first (Code.gs 1.2.0)." : m === "daily_limit" ? "Lia hit her limit for today." : m === "not_a_recipe" ? "Lia could not find a recipe in that." : "Something went wrong (" + m + "). Try again."; }
 function liaRead(opts) {
