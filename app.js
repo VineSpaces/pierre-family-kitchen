@@ -91,7 +91,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v19";
+var BUILD = "v20";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -125,7 +125,7 @@ function storeStats() { var d = byId(D.settings, "storestats"); return d ? safeP
 var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function fmtDay(ms) { var d = new Date(Number(ms)); if (isNaN(d)) return ""; var o = new Date().getFullYear() !== d.getFullYear() ? " " + d.getFullYear() : ""; return MON[d.getMonth()] + " " + d.getDate() + o; }
 function boughtInfo(c) {
-  if (!c) return ""; var s0 = storeStats()[c.id] || {}, lb = Number(c.lastBought) || 0, out = [];
+  if (!c) return ""; var s0 = storeStats()[c.id] || {}, lb = Number(c.lastBought) || 0, out = []; if (lb < 1e11) lb = 0;
   if (lb) { out.push("Last bought " + fmtDay(lb)); if (c.timesBought) out.push(c.timesBought + (Number(c.timesBought) === 1 ? " trip" : " trips")); }
   if (s0.p) out.push("usually $" + Number(s0.p).toFixed(2));
   return out.join(" \u00b7 ");
@@ -243,7 +243,7 @@ function needRow(i) {
 function cartRow(i, waiting) {
   var ss = st.store === "Stop & Shop";
   return '<div class="item">' + thumb(i.cat, i.name) + '<div class="grow"><div><b>' + esc(i.name) + '</b></div><div class="sub">' + esc([i.size, (i.qty || 1) > 1 ? "x" + i.qty : "", i.note].filter(Boolean).join(" · ")) + "</div>" + (function () { var b = boughtInfo(catalogMatch(i.name)); return b ? '<div class="sub last">' + esc(b) + "</div>" : ""; })() +
-    (waiting ? '<span class="tag wait">Waiting to push</span> <button class="linkbtn" style="min-height:28px;padding:2px 6px;font-size:12px" data-act="toneeds" data-id="' + esc(i.id) + '">Back to Needs</button>' : '<span class="tag sync">' + (ss ? "In your Stop &amp; Shop cart" : "On the " + esc(st.store) + " list") + "</span>") + "</div></div>";
+    (waiting ? '<span class="tag wait">Waiting to push</span> <button class="linkbtn" style="min-height:28px;padding:2px 6px;font-size:12px" data-act="toneeds" data-id="' + esc(i.id) + '">Back to Needs</button> <button class="linkbtn" style="min-height:28px;padding:2px 6px;font-size:12px;color:#b3261e" data-act="del" data-id="' + esc(i.id) + '">Remove</button>' : '<span class="tag sync">' + (ss ? "In your Stop &amp; Shop cart" : "On the " + esc(st.store) + " list") + "</span>") + "</div></div>";
 }
 function storeSeg() { return '<div class="seg" role="group" aria-label="Store">' + stores.map(function (s) { var n = itemsFor(s).filter(function (i) { return i.status !== "ordered"; }).length; return '<button data-act="store" data-v="' + esc(s) + '" aria-pressed="' + (st.store === s) + '">' + esc(s) + (n ? "<b>" + n + "</b>" : "") + "</button>"; }).join("") + "</div>"; }
 function rc(r) { return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + recImg(r) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + "</div></button>"; }
