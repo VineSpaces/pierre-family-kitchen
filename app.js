@@ -11,7 +11,7 @@ var D = {list: [], catalog: [], pantry: [], recipes: [], votes: [], members: [],
 var st = {chat: [], chatLoaded: false, toolOpen: "", pushOpen: false, voteOpen: false, shopView: "needs", pushKey: undefined, tab: "home", store: "Stop & Shop", typing: false, loaded: false, gate: false, err: "", lastSync: 0};
 var me = {name: ls("pfk_name") || "", pin: ls("pfk_pin") || ""};
 
-var P={cal:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',plus:'<path d="M12 5v14M5 12h14"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',back:'<path d="M15 5l-7 7 7 7"/>',cam:'<path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',cup:'<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3.5c0 1-1 1.5-1 2.5M12 3.5c0 1-1 1.5-1 2.5"/>',home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',cart:'<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h3l2.4 11.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.7L20.5 8H6.2"/>',cook:'<path d="M5 10h14v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 10h18M9 6.5c0-1.6 1-1.6 1-3.2M14 6.5c0-1.6 1-1.6 1-3.2"/>',pantry:'<rect x="6.5" y="3" width="11" height="3" rx="1"/><path d="M7.5 6v14a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V6M7.5 11h9"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 1 2-2h13v3H6a2 2 0 0 1-2-1zM9 7h6"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',send:'<path d="M4 12L20 4l-6 16-3-7z"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'};
+var P={cal:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',plus:'<path d="M12 5v14M5 12h14"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',back:'<path d="M15 5l-7 7 7 7"/>',cam:'<path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',play:'<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/>',cup:'<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3.5c0 1-1 1.5-1 2.5M12 3.5c0 1-1 1.5-1 2.5"/>',home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',cart:'<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h3l2.4 11.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.7L20.5 8H6.2"/>',cook:'<path d="M5 10h14v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 10h18M9 6.5c0-1.6 1-1.6 1-3.2M14 6.5c0-1.6 1-1.6 1-3.2"/>',pantry:'<rect x="6.5" y="3" width="11" height="3" rx="1"/><path d="M7.5 6v14a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V6M7.5 11h9"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 1 2-2h13v3H6a2 2 0 0 1-2-1zM9 7h6"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',send:'<path d="M4 12L20 4l-6 16-3-7z"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'};
 function ic(n,c){return '<svg class="'+(c||'i')+'" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>';}
 /* ---------- small utils ---------- */
 function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -92,7 +92,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v21";
+var BUILD = "v22";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -631,7 +631,7 @@ function recBody() {
   var cats = ["All"].concat(RCATS.filter(function (c) { return all.some(function (r) { return rCat(r) === c; }); }));
   var list = all.filter(function (r) { return (cat === "All" || rCat(r) === cat) && (!q || (r.name + " " + rCat(r) + " " + arr(r.ings).map(function (i) { return i.n; }).join(" ")).toLowerCase().indexOf(q) > -1); });
   h += '<div class="h2">' + (q ? "Results" : "All recipes") + '</div><div class="cats">' + cats.map(function (c) { return '<button data-act="rcat" data-v="' + esc(c) + '" aria-pressed="' + (cat === c) + '">' + esc(c) + "</button>"; }).join("") + "</div>";
-  h += list.length ? '<div class="grid2">' + list.map(function (r) { var ig = recipeIngs(r), n = ig.filter(function (x) { return x.s === "need"; }).length; return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + esc(recImg(r)) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + '<div class="sub">' + [rTime(r), ig.length ? (n ? n + " to buy" : "have it all") : (r.kind === "suggested" ? "suggested by " + esc(r.addedBy || "family") : "")].filter(Boolean).join(" &middot; ") + "</div></div></button>"; }).join("") + "</div>" : '<p class="empty">No recipes match.</p>';
+  h += list.length ? '<div class="grid2">' + list.map(function (r) { var ig = recipeIngs(r), n = ig.filter(function (x) { return x.s === "need"; }).length; return '<button class="rcard" data-act="recipe" data-id="' + esc(r.id) + '"><div class="pic" style="background-image:url(' + esc(recImg(r)) + ')" role="img" aria-label="' + esc(r.name) + '"></div><div class="nm">' + esc(r.name) + '<div class="sub">' + [r.link ? "video" : "", rTime(r), ig.length ? (n ? n + " to buy" : "have it all") : (r.kind === "suggested" ? "suggested by " + esc(r.addedBy || "family") : "")].filter(Boolean).join(" &middot; ") + "</div></div></button>"; }).join("") + "</div>" : '<p class="empty">No recipes match.</p>';
   if (!q) h += '<div class="h2" style="margin-top:22px">Also in the kitchen</div><button class="ckb" data-act="tab" data-v="coffee" style="background-image:url(img/coffee.jpg)"><span class="t"><small>Kayley&rsquo;s drinks</small><b>Coffee Korner</b><span>' + D.coffee.length + " drink" + (D.coffee.length === 1 ? "" : "s") + " &middot; supplies</span></span></button>";
   return h;
 }
@@ -650,6 +650,7 @@ function rdetail() {
   var tag = {have: '<span class="chip ok">Have</span>', check: '<span class="chip info">Check</span>', need: '<span class="chip warn">Need</span>'};
   var h = '<div class="rd"><div class="rhero" style="background-image:url(' + esc(recImg(r)) + ')"><button class="back" data-act="rback" aria-label="Back">' + ic("back", "") + "</button><span>" + esc(rCat(r)) + "</span></div>" +
     "<h1>" + esc(r.name) + "</h1>" + (r.note ? '<div class="sub">' + esc(r.note) + "</div>" : "") +
+    (r.link ? '<a class="big alt watch" href="' + esc(safeLink(r.link)) + '" target="_blank" rel="noopener">' + ic("play", "") + " Watch the video on " + esc(linkSite(r.link)) + "</a>" + (canPlan() ? '<button class="linkbtn" data-act="rlink" style="display:block;margin:0 auto">Change the video link</button>' : "") : (canPlan() ? '<button class="linkbtn" data-act="rlink" style="padding-left:0">+ Add a video link</button>' : "")) +
     '<div class="row" style="margin-top:8px"><div class="avs">' + loves.map(avatar).join("") + '</div><div class="sub grow">' + (loves.length ? loves.length + " love it" : "Be the first to love it") + '</div><button class="btn sm ' + (mine ? "" : "ghost") + '" data-act="love" aria-pressed="' + mine + '">' + (mine ? "Loved" : "Love it") + "</button></div>" +
     '<div class="facts"><div class="fact"><small>Prep</small><b>' + (Number(r.prep) ? r.prep + " min" : "&ndash;") + '</b></div><div class="fact"><small>Cook</small><b>' + (Number(r.cook) ? r.cook + " min" : "&ndash;") + '</b></div><div class="fact"><small>Feeds</small><b>' + sv + '</b><div class="scale">' + [4, 8, 12].map(function (n) { return '<button data-act="rsv" data-v="' + n + '" aria-pressed="' + (sv === n) + '">' + n + "</button>"; }).join("") + "</div></div></div>";
   h += '<div class="card"><h3>Ingredients</h3>' + (ig.length ? ig.map(function (x) { var c = catalogMatch(x.n); return '<div class="ing"><span class="q">' + esc(scaleQ(x.q, f)) + '</span><span class="grow">' + esc(x.n) + (c ? '<span class="u">Usually ' + esc(c.brand || c.name) + "</span>" : "") + "</span>" + tag[x.s] + "</div>"; }).join("") +
@@ -696,10 +697,12 @@ function drink() {
 
 /* ---------- camera: shrink on the phone, then save to the family photos folder ---------- */
 var camCb = null;
-function camera(cb) {
+/* lib = true: the phone asks Take Photo or Photo Library (screenshots); otherwise it opens the camera. */
+function camera(cb, lib) {
   camCb = cb; var inp = $("camin");
-  if (!inp) { inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment"); inp.id = "camin"; inp.hidden = true; document.body.appendChild(inp);
+  if (!inp) { inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.id = "camin"; inp.hidden = true; document.body.appendChild(inp);
     inp.addEventListener("change", function () { var f = inp.files && inp.files[0]; inp.value = ""; if (!f || !camCb) return; var cbk = camCb; camCb = null; shrink(f, 1600, 0.82).then(cbk, function () { toast("Could not read that photo. Try another."); }); }); }
+  if (lib) inp.removeAttribute("capture"); else inp.setAttribute("capture", "environment");
   inp.click();
 }
 function shrink(file, max, q) {
@@ -743,17 +746,22 @@ function recipePreview(o, src) {
   return '<h3 id="shT">' + esc(o.name) + '</h3><div class="sub">' + [esc(o.cat), o.prep + o.cook ? (o.prep + o.cook) + " min" : "", "feeds " + o.serves].filter(Boolean).join(" &middot; ") + "</div>" + (o.note ? '<p class="sub">' + esc(o.note) + "</p>" : "") +
     '<div style="margin:8px 0">' + o.ings.map(function (i) { return '<div class="ing"><span class="q">' + esc(i.q) + '</span><span class="grow">' + esc(i.n) + "</span></div>"; }).join("") + "</div>" +
     (o.steps.length ? '<ol class="steps">' + o.steps.map(function (s) { return "<li><span>" + esc(s) + "</span></li>"; }).join("") + "</ol>" : "") +
+    '<label class="sub" for="dlink" style="display:block;margin-top:10px">Video link (optional): Facebook, YouTube, Instagram, TikTok</label><input type="url" id="dlink" inputmode="url" autocomplete="off" placeholder="Paste the video link" value="' + esc(st.draftLink || "") + '">' +
     '<button class="big" data-act="draftsave">Save to Ojazel&rsquo;s Recipe Book</button>' + (canPlan() ? '<button class="big alt" data-act="draftplan">Save and put on the calendar</button>' : "") + '<button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Not this one</button>';
 }
 function saveDraft() {
   var o = st.draft; if (!o) return null; st.draft = null;
-  return put("recipes", null, {name: o.name, cat: o.cat, prep: o.prep, cook: o.cook, serves: o.serves, ings: o.ings, steps: o.steps, note: o.note, img: "", addedBy: me.name || "", kind: "banger", loves: [], notes: [], photos: []});
+  var le = $("dlink"), link = safeLink(le ? le.value : (st.draftLink || "")); st.draftLink = "";
+  return put("recipes", null, {link: link, name: o.name, cat: o.cat, prep: o.prep, cook: o.cook, serves: o.serves, ings: o.ings, steps: o.steps, note: o.note, img: "", addedBy: me.name || "", kind: "banger", loves: [], notes: [], photos: []});
 }
+function safeLink(u) { u = String(u || "").trim(); var m = u.match(/https?:\/\/[^\s<>"']+/i); return m ? m[0] : ""; }
+function linkSite(u) { var h = (String(u).match(/^https?:\/\/([^\/?#]+)/i) || [])[1] || ""; h = h.replace(/^(www|m|web)\./i, "").toLowerCase(); return /facebook|fb\.watch|fb\.com/.test(h) ? "Facebook" : /youtu/.test(h) ? "YouTube" : /instagram/.test(h) ? "Instagram" : /tiktok/.test(h) ? "TikTok" : h || "the web"; }
 function snapRecipe(mode) {
+  st.draftLink = "";
   camera(function (data) {
     sheet('<h3 id="shT">Lia is reading it</h3><div class="readwrap"><img src="' + data + '" alt="Your photo"><p class="sub"><span class="dots">...</span> This takes about 15 seconds.</p></div>', true);
     liaRead({image: data, mode: "recipe"}).then(function (o) { closeSheet(true); sheet(recipePreview(cleanRecipe(o))); }, function (e) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(e)) + '</p><button class="big" data-act="addrec">Try again</button><button class="linkbtn" data-act="close">Close</button>'); });
-  });
+  }, true);
 }
 function planPick() {
   st.wk = st.wk || 0; var keep = st.pday;
@@ -1023,16 +1031,19 @@ document.addEventListener("click", function (e) {
   else if (a === "pwk") { st.wk = Number(v) || 0; planPick(); }
   else if (a === "pnight") { var dd = weekDays(st.wk || 0)[Number(v) || 0]; setSlot(dkey(dd) + "|d", {r: st.planRid}); closeSheet(true); st.pday = Number(v) || 0; toast("On the calendar for " + DAYS[dd.getDay()] + "."); render(); }
   else if (a === "rvote") { var day = today(); put("votes", day + "_" + me.name, {day: day, recipeId: id, voter: me.name}); toast("Voted for tonight."); }
-  else if (a === "addrec") { sheet('<h3 id="shT">Add a recipe</h3><button class="big" data-act="rsnap">' + ic("cam", "") + ' Snap a recipe or screenshot</button><button class="big alt" data-act="rtext">Paste the recipe text</button>' + '<button class="big alt" data-act="suggest">Just suggest a meal by name</button><p class="sub" style="margin-top:10px">You can also send it to Claude in the Claude app with &ldquo;add to the recipe book.&rdquo;</p><button class="linkbtn" data-act="close" style="display:block;margin:0 auto">Close</button>'); }
+  else if (a === "addrec") { sheet('<h3 id="shT">Add a recipe</h3><button class="big" data-act="rsnap">' + ic("cam", "") + ' Photo or screenshot of a recipe</button><button class="big alt" data-act="rtext">Paste the recipe text</button>' + '<button class="big alt" data-act="suggest">Just suggest a meal by name</button><p class="sub" style="margin-top:10px">You can also send it to Claude in the Claude app with &ldquo;add to the recipe book.&rdquo;</p><button class="linkbtn" data-act="close" style="display:block;margin:0 auto">Close</button>'); }
   else if (a === "rsnap") { closeSheet(true); snapRecipe(); }
-  else if (a === "rtext") { sheet('<h3 id="shT">Paste the recipe</h3><p class="sub">Paste the caption or recipe text. A link alone is not enough; Lia cannot open web pages.</p><textarea class="f" id="rtIn" style="min-height:160px"></textarea><button class="big" data-act="rtextgo">Lia, read it</button><button class="linkbtn" data-act="close">Cancel</button>'); }
-  else if (a === "rtextgo") { var tx = $("rtIn") ? $("rtIn").value.trim() : ""; if (!tx) { toast("Paste the recipe first."); return; } sheet('<h3 id="shT">Lia is reading it</h3><p class="sub"><span class="dots">...</span> About 15 seconds.</p>', true); liaRead({text: tx}).then(function (o) { closeSheet(true); sheet(recipePreview(cleanRecipe(o))); }, function (er) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(er)) + '</p><button class="big" data-act="close">Close</button>'); }); }
+  else if (a === "rtext") { sheet('<h3 id="shT">Paste the recipe</h3><p class="sub">Paste the caption or recipe text. A link alone is not enough; Lia cannot open web pages.</p><textarea class="f" id="rtIn" style="min-height:160px"></textarea><label class="sub" for="rtLink" style="display:block;margin-top:10px">Video link (optional)</label><input type="url" id="rtLink" inputmode="url" autocomplete="off" placeholder="Paste the Facebook or YouTube link"><button class="big" data-act="rtextgo">Lia, read it</button><button class="linkbtn" data-act="close">Cancel</button>'); }
+  else if (a === "rtextgo") { var tx = $("rtIn") ? $("rtIn").value.trim() : ""; if (!tx) { toast("Paste the recipe first."); return; } st.draftLink = safeLink(($("rtLink") ? $("rtLink").value : "") || tx); sheet('<h3 id="shT">Lia is reading it</h3><p class="sub"><span class="dots">...</span> About 15 seconds.</p>', true); liaRead({text: tx}).then(function (o) { closeSheet(true); sheet(recipePreview(cleanRecipe(o))); }, function (er) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(er)) + '</p><button class="big" data-act="close">Close</button>'); }); }
   else if (a === "draftsave") { var nid = saveDraft(); closeSheet(true); if (nid) { st.rid = nid; st.rfrom = st.tab === "rdetail" ? "recipes" : (st.tab === "cook" ? "cook" : "recipes"); st.tab = "rdetail"; st.rsv = null; window.scrollTo(0, 0); render(); toast("Saved to Ojazel's Recipe Book."); } }
   else if (a === "draftplan") { var nid2 = saveDraft(); if (nid2) { st.planRid = nid2; st.wk = 0; planPick(); } }
+  else if (a === "rlink") { r = byId(D.recipes, st.rid); sheet('<h3 id="shT">Video link</h3><p class="sub">Paste the Facebook, YouTube, Instagram or TikTok link. Tapping Watch opens it in that app.</p><input type="url" id="rlIn" inputmode="url" autocomplete="off" placeholder="https://..." value="' + esc(r && r.link || "") + '"><button class="big" data-act="rlinksave">Save link</button>' + (r && r.link ? '<button class="linkbtn" data-act="rlinkdel">Remove the link</button>' : "") + '<button class="linkbtn" data-act="close">Cancel</button>'); }
+  else if (a === "rlinksave") { var lk = safeLink($("rlIn") ? $("rlIn").value : ""); if (!lk) { toast("That does not look like a link."); return; } put("recipes", st.rid, {link: lk}); closeSheet(true); toast("Video link saved."); }
+  else if (a === "rlinkdel") { put("recipes", st.rid, {link: ""}); closeSheet(true); toast("Link removed."); }
   else if (a === "liasnap") { camera(function (data) {
       st.chat.push({who: "me", t: "[photo]", img: data}); st.chat.push({who: "ai", t: '<span class="dots">...</span>', pending: true}); render(); scrollDown();
       liaRead({image: data}).then(function (o) { var rc = cleanRecipe(o); st.chat.pop(); st.chat.push({who: "ai", t: "I read it: <b>" + esc(rc.name) + "</b>, " + rc.ings.length + " ingredients and " + rc.steps.length + " steps, scaled for " + rc.serves + '.<div class="opts"><button class="opt fill" data-act="draftshow">Look and save</button></div>', raw: "I read it: " + rc.name}); st.draft = rc; render(); scrollDown(); sheet(recipePreview(rc)); },
-        function (er) { st.chat.pop(); st.chat.push({who: "ai", t: esc(errMsg(er)), raw: ""}); render(); scrollDown(); }); }); }
+        function (er) { st.chat.pop(); st.chat.push({who: "ai", t: esc(errMsg(er)), raw: ""}); render(); scrollDown(); }); }, true); }
   else if (a === "draftshow") { if (st.draft) sheet(recipePreview(st.draft)); else toast("Already saved. Look in the Recipe Book."); }
   /* Coffee Korner */
   else if (a === "drink") { st.ck = id; st.tab = "drink"; window.scrollTo(0, 0); render(); }
@@ -1047,7 +1058,7 @@ document.addEventListener("click", function (e) {
   else if (a === "ckdel") { if (st.ckdel !== st.ck) { st.ckdel = st.ck; toast("Tap Remove again to delete this drink."); return; } del("coffee", st.ck); st.ckdel = null; st.tab = "coffee"; render(); toast("Removed."); }
   else if (a === "ckcam") { camera(function (data) {
       sheet('<h3 id="shT">Lia is writing it up</h3><div class="readwrap"><img src="' + data + '" alt="Your photo"><p class="sub"><span class="dots">...</span> About 15 seconds.</p></div>', true);
-      Promise.all([liaRead({image: data, mode: "drink"}), upload(data, "coffee").catch(function () { return ""; })]).then(function (res) { closeSheet(true); newDrink(res[0], res[1]); }, function (er) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(er)) + '</p><button class="big" data-act="close">Close</button>'); }); }); }
+      Promise.all([liaRead({image: data, mode: "drink"}), upload(data, "coffee").catch(function () { return ""; })]).then(function (res) { closeSheet(true); newDrink(res[0], res[1]); }, function (er) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(er)) + '</p><button class="big" data-act="close">Close</button>'); }); }, true); }
   else if (a === "cktype") { sheet('<h3 id="shT">Kayley&rsquo;s notes</h3><p class="sub">Type or dictate how she made it. Lia turns it into a recipe.</p><textarea class="f" id="ckIn" style="min-height:140px"></textarea><button class="big" data-act="cktypego">Lia, write it up</button><button class="linkbtn" data-act="close">Cancel</button>'); }
   else if (a === "cktypego") { var ct = $("ckIn") ? $("ckIn").value.trim() : ""; if (!ct) { toast("Type the notes first."); return; } sheet('<h3 id="shT">Lia is writing it up</h3><p class="sub"><span class="dots">...</span> About 15 seconds.</p>', true); liaRead({text: ct, mode: "drink"}).then(function (o) { closeSheet(true); newDrink(o, ""); }, function (er) { closeSheet(true); sheet('<h3 id="shT">Hmm</h3><p>' + esc(errMsg(er)) + '</p><button class="big" data-act="close">Close</button>'); }); }
 });
