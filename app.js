@@ -92,7 +92,7 @@ function put(tab, id, data) {
   enqueue({action: "upsert", tab: tab, id: id, data: send}); lastJSON = ""; render(); return id;
 }
 function del(tab, id) { D[tab] = D[tab].filter(function (x) { return String(x.id) !== String(id); }); enqueue({action: "delete", tab: tab, id: id}); lastJSON = ""; render(); }
-var BUILD = "v22";
+var BUILD = "v23";
 function setStatus() {
   var when = st.lastSync ? new Date(st.lastSync).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "";
   $("status").innerHTML = st.err ? esc(st.err) : (st.loaded ? (me.name ? "Using this phone as <b>" + esc(me.name) + "</b> &middot; " : "") + "synced " + when + ' &middot; <button class="linkbtn" style="min-height:24px;padding:0" data-act="who">Switch person</button> &middot; ' + BUILD : "Loading your kitchen...");
@@ -658,7 +658,7 @@ function rdetail() {
   if (steps.length) h += '<div class="card"><h3>Steps</h3><ol class="steps">' + steps.map(function (s) { return "<li><span>" + esc(s) + "</span></li>"; }).join("") + "</ol></div>";
   h += '<div class="card"><div class="row"><h3 class="grow">Family notes</h3><button class="btn sm ghost" data-act="addnote">Add a note</button></div>' + (notes.length ? notes.map(function (n) { return '<div class="note"><b>' + esc(n.by || "Family") + "</b>" + esc(n.t || "") + "</div>"; }).join("") : '<p class="sub" style="margin:8px 0 0">Tips like &ldquo;less spicy for the kids&rdquo; go here.</p>') + "</div>";
   h += '<div class="card"><h3>When we made it</h3><div class="gal">' + photos.map(function (p) { return '<div style="background-image:url(' + esc(imgSrc(p.u, "")) + ')"><small>' + esc(p.by || "") + (p.d ? (p.by ? " &middot; " : "") + esc(fmtDay(kdate(p.d).getTime())) : "") + "</small></div>"; }).join("") + '<button data-act="rphoto">' + ic("cam", "") + "Add our photo</button></div>" + '<div class="sub">' + (ml[r.id] ? "Last made " + esc(fmtDay(kdate(ml[r.id]).getTime())) : "Not made yet") + "</div></div>";
-  h += '<div class="sticky">' + (canPlan() ? '<button class="big" data-act="planit">Put on the calendar</button>' : '<button class="big" data-act="vote" data-id="' + esc(r.id) + '">Vote for tonight</button>') + "</div></div>";
+  h += '<div class="sticky">' + (canPlan() ? '<button class="big" data-act="planit">Put on the calendar</button>' : '<button class="big" data-act="vote" data-id="' + esc(r.id) + '">Vote for tonight</button>') + "</div>" + (canPlan() ? '<button class="linkbtn rdel" data-act="rdel">Remove this recipe</button>' : "") + "</div>";
   return h;
 }
 
@@ -1039,6 +1039,10 @@ document.addEventListener("click", function (e) {
   else if (a === "draftplan") { var nid2 = saveDraft(); if (nid2) { st.planRid = nid2; st.wk = 0; planPick(); } }
   else if (a === "rlink") { r = byId(D.recipes, st.rid); sheet('<h3 id="shT">Video link</h3><p class="sub">Paste the Facebook, YouTube, Instagram or TikTok link. Tapping Watch opens it in that app.</p><input type="url" id="rlIn" inputmode="url" autocomplete="off" placeholder="https://..." value="' + esc(r && r.link || "") + '"><button class="big" data-act="rlinksave">Save link</button>' + (r && r.link ? '<button class="linkbtn" data-act="rlinkdel">Remove the link</button>' : "") + '<button class="linkbtn" data-act="close">Cancel</button>'); }
   else if (a === "rlinksave") { var lk = safeLink($("rlIn") ? $("rlIn").value : ""); if (!lk) { toast("That does not look like a link."); return; } put("recipes", st.rid, {link: lk}); closeSheet(true); toast("Video link saved."); }
+  else if (a === "rdel") { r = byId(D.recipes, st.rid); if (!r) return; sheet('<h3 id="shT">Remove ' + esc(r.name) + '?</h3><p class="sub">It leaves Ojazel&rsquo;s Recipe Book for everyone, along with its notes and photos, and comes off any days it is planned on the calendar. This cannot be undone.</p><button class="big danger" data-act="rdelyes">Remove recipe</button><button class="linkbtn" data-act="close" style="display:block;margin:6px auto 0">Keep it</button>'); }
+  else if (a === "rdelyes") { var rid1 = st.rid, rr1 = byId(D.recipes, rid1), nm1 = rr1 ? rr1.name : "Recipe", pl = planAll(), ch = 0;
+    Object.keys(pl).forEach(function (k) { Object.keys(pl[k] || {}).forEach(function (sl) { if (pl[k][sl] && pl[k][sl].r === rid1) { delete pl[k][sl]; ch++; } }); });
+    if (ch) planSave(pl); del("recipes", rid1); closeSheet(true); st.tab = st.rfrom === "plan" ? "plan" : "recipes"; window.scrollTo(0, 0); render(); toast("Removed " + nm1 + (ch ? " and took it off the calendar." : ".")); }
   else if (a === "rlinkdel") { put("recipes", st.rid, {link: ""}); closeSheet(true); toast("Link removed."); }
   else if (a === "liasnap") { camera(function (data) {
       st.chat.push({who: "me", t: "[photo]", img: data}); st.chat.push({who: "ai", t: '<span class="dots">...</span>', pending: true}); render(); scrollDown();
